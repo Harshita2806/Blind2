@@ -1,290 +1,258 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Menu, User, Zap, Users, BookOpen,
-    CheckCircle, Sparkles, X, Mic2, PieChart
+    Menu, X, LogOut, Upload, Music, BarChart3, BookOpen,
+    FileText, Zap, Clock, Users, Volume2, Sparkles, CheckCircle,
+    TrendingUp, Award, Eye, Star
 } from "lucide-react";
-import UploadCenter from "../components/Teacher/UploadCenter";
-import SemanticEditor from "../components/Teacher/SemanticEditor";
-import AudioLab from "../components/Teacher/AudioLab";
-import AssessmentArchitect from "../components/Teacher/AssessmentArchitect";
-import InsightEngine from "../components/Teacher/InsightEngine";
-import CurriculumCommander from "../components/Teacher/CurriculumCommander";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { materialsAPI, analyticsAPI } from "../services/api";
+import { quizzesAPI } from "../services/api";
 
-// Animation Variants
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.15,
-            delayChildren: 0.2,
-        }
-    }
-};
+const SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "History", "Geography", "English", "Science", "Social Science", "Other"];
+const GRADES = ["Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"];
 
-const itemVariants = {
-    hidden: { opacity: 0, scale: 0.9, y: 30 },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        y: 0,
-        transition: { type: "spring", stiffness: 120, damping: 10 }
-    }
-};
+export default function TeacherPage() {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [activeSection, setActiveSection] = useState("dashboard");
+    const [materials, setMaterials] = useState([]);
+    const [analytics, setAnalytics] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-const headingLeftVariants = {
-    hidden: { opacity: 0, x: -60 },
-    visible: {
-        opacity: 1,
-        x: 0,
-        transition: { type: "spring", stiffness: 100, damping: 14, delay: 1.2 }
-    }
-};
+    const [uploadForm, setUploadForm] = useState({
+        title: "", subject: "Mathematics", gradeLevel: "Grade 10", chapter: "", description: ""
+    });
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploadStatus, setUploadStatus] = useState("idle");
+    const [uploadMessage, setUploadMessage] = useState("");
 
-const headingRightVariants = {
-    hidden: { opacity: 0, x: 60 },
-    visible: {
-        opacity: 1,
-        x: 0,
-        transition: { type: "spring", stiffness: 100, damping: 14, delay: 1.8 }
-    }
-};
+    useEffect(() => { fetchMaterials(); fetchAnalytics(); }, []);
 
+    const fetchMaterials = async () => {
+        setLoading(true);
+        try {
+            const response = await materialsAPI.getAll({ subject: "", gradeLevel: "" });
+            setMaterials(response.data || []);
+        } catch (err) {
+            console.error("Failed to fetch materials:", err);
+        } finally { setLoading(false); }
+    };
 
-export default function TeacherDashboard() {
-    const [activeView, setActiveView] = useState("dashboard");
-    const [isSidebarOpen, setSidebarOpen] = useState(false);
-    const uploadRef = useRef(null);
-
-    const scrollToUpload = () => {
-        setSidebarOpen(false);
-        if (activeView !== "dashboard") {
-            setActiveView("dashboard");
-            setTimeout(() => {
-                uploadRef.current?.scrollIntoView({ behavior: "smooth" });
-            }, 100);
-        } else {
-            uploadRef.current?.scrollIntoView({ behavior: "smooth" });
+    const fetchAnalytics = async () => {
+        try {
+            const response = await analyticsAPI.getOverview();
+            setAnalytics(response.data || {});
+        } catch (err) {
+            console.error("Failed to fetch analytics:", err);
+            setAnalytics({});
         }
     };
 
-    const renderContent = () => {
-        switch (activeView) {
-            case "semantic": return <SemanticEditor />;
-            case "audio": return <AudioLab />;
-            case "assessment": return <AssessmentArchitect />;
-            case "curriculum": return <CurriculumCommander />;
-            case "insights": return <InsightEngine />;
-            default: return (
-                <>
-                    {/* --- HERO CONTENT --- */}
-                    <main className="relative min-h-screen flex items-center justify-center px-4 md:px-10 pt-24 pb-20">
-                        <motion.div
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                            // Mobile: Flex column, Desktop: Grid 12-col
-                            className="w-full max-w-[1400px] flex flex-col lg:grid lg:grid-cols-12 gap-8 lg:gap-4 items-center"
-                        >
-                            {/* --- DESKTOP LEFT STATS (Hidden on Mobile) --- */}
-                            <div className="hidden lg:flex col-span-3 flex-col items-center gap-12">
-                                <CircularStat variants={itemVariants} icon={<Users />} label="Students" value="1.2k" color="indigo" />
-                                <CircularStat variants={itemVariants} icon={<Mic2 />} label="Audio" value="142h" color="emerald" />
-                            </div>
+    const handleFileSelect = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.type !== "application/pdf") { setUploadMessage("Please select a PDF file."); setUploadStatus("error"); return; }
+        if (file.size > 50 * 1024 * 1024) { setUploadMessage("File too large. Maximum is 50MB."); setUploadStatus("error"); return; }
+        setSelectedFile(file);
+        if (!uploadForm.title) setUploadForm(prev => ({ ...prev, title: file.name.replace(".pdf", "") }));
+        setUploadStatus("idle"); setUploadMessage("");
+    };
 
-                            {/* --- CENTER CONTENT --- */}
-                            <div className="w-full lg:col-span-6 text-center flex flex-col items-center">
-                                <motion.div
-                                    variants={itemVariants}
-                                    className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] uppercase tracking-widest mb-6 backdrop-blur-sm shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-                                >
-                                    <Sparkles size={12} className="text-indigo-400" /> System Operational
-                                </motion.div>
-
-                                <div className="overflow-hidden mb-6 py-2">
-                                    <motion.h1 variants={headingLeftVariants} className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight font-serif">
-                                        Welcome Back,
-                                    </motion.h1>
-                                    <motion.span variants={headingRightVariants} className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight block font-serif text-transparent bg-clip-text bg-linear-to-r from-indigo-300 to-emerald-300 shadow-[0_0_30px_rgba(110,231,183,0.20)]">
-                                        Professor Alexander
-                                    </motion.span>
-                                </div>
-
-                                <motion.p variants={itemVariants} className="text-gray-200 text-base md:text-lg mb-10 max-w-md mx-auto leading-relaxed">
-                                    Design accessible lessons. Empower every learner. Upload material, generate AI narration, and track progress instantly.
-                                </motion.p>
-
-                                <motion.button
-                                    onClick={scrollToUpload}
-                                    variants={itemVariants}
-                                    whileHover={{ scale: 1.06, boxShadow: "0 0 45px rgba(255,255,255,0.4)" }}
-                                    whileTap={{ scale: 0.94 }}
-                                    className="px-8 py-3.5 md:px-10 md:py-4 bg-white text-black hover:bg-indigo-50 rounded-full font-bold transition-all shadow-xl relative overflow-hidden group"
-                                >
-                                    <span className="relative z-10 flex items-center gap-2">Get Started </span>
-                                    <motion.div className="absolute inset-0 bg-gradient-to-r from-indigo-100 to-purple-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                </motion.button>
-
-                                {/* --- MOBILE STATS GRID (Visible only on Mobile) --- */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-12 w-full max-w-md lg:hidden">
-                                    {/* Reordered for visual balance on mobile */}
-                                    <div className="col-span-1 sm:col-span-1">
-                                        <CircularStat variants={itemVariants} icon={<Users />} label="Students" value="1.2k" color="indigo" mobile />
-                                    </div>
-                                    <div className="col-span-1 sm:col-span-1">
-                                        <CircularStat variants={itemVariants} icon={<BookOpen />} label="Lessons" value="48" color="indigo" mobile />
-                                    </div>
-                                    <div className="col-span-1 sm:col-span-1">
-                                        <CircularStat variants={itemVariants} icon={<Mic2 />} label="Audio" value="142h" color="emerald" mobile />
-                                    </div>
-                                    <div className="col-span-1 sm:col-span-1">
-                                        <CircularStat variants={itemVariants} icon={<CheckCircle />} label="Compliance" value="98%" color="emerald" mobile />
-                                    </div>
-                                    <div className="col-span-2 sm:col-span-1 flex justify-center">
-                                        <CircularStat variants={itemVariants} icon={<PieChart />} label="Engagement" value="High" color="indigo" mobile />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* --- DESKTOP RIGHT STATS (Hidden on Mobile) --- */}
-                            <div className="hidden lg:flex col-span-3 flex-col items-center gap-12">
-                                <CircularStat variants={itemVariants} icon={<BookOpen />} label="Lessons" value="48" color="indigo" />
-                                <CircularStat variants={itemVariants} icon={<CheckCircle />} label="Compliance" value="98%" color="emerald" />
-                                <CircularStat variants={itemVariants} icon={<PieChart />} label="Engagement" value="High" color="indigo" />
-                            </div>
-                        </motion.div>
-                    </main>
-
-                    {/* --- FEATURE 1: UPLOAD CENTER --- */}
-                    <div ref={uploadRef} className="scroll-mt-4">
-                        <UploadCenter />
-                    </div>
-                </>
-            );
+    const handleUpload = async () => {
+        if (!selectedFile) { setUploadMessage("Please select a PDF file."); setUploadStatus("error"); return; }
+        if (!uploadForm.title.trim()) { setUploadMessage("Please enter a title."); setUploadStatus("error"); return; }
+        setUploadStatus("uploading");
+        try {
+            const formData = new FormData();
+            formData.append("pdf", selectedFile);
+            Object.entries(uploadForm).forEach(([k, v]) => { if (v) formData.append(k, v); });
+            await materialsAPI.create(formData);
+            setUploadMessage("PDF uploaded successfully!");
+            setUploadStatus("success");
+            setSelectedFile(null);
+            setUploadForm({ title: "", subject: "Mathematics", gradeLevel: "Grade 10", chapter: "", description: "" });
+            fetchMaterials();
+        } catch (err) {
+            setUploadMessage(err.message || "Upload failed.");
+            setUploadStatus("error");
         }
     };
+
+    const handleGenerateAudio = async (materialId) => {
+        try {
+            setUploadStatus("uploading");
+            setUploadMessage("Generating audio... this may take a few minutes for a large PDF.");
+            await materialsAPI.generateAudio(materialId);
+            setUploadMessage("✅ Audio generated successfully!");
+            setUploadStatus("success");
+            setTimeout(() => fetchMaterials(), 1000);
+        } catch (err) {
+            setUploadMessage(err.message || "Audio generation failed.");
+            setUploadStatus("error");
+        }
+    };
+
+    const handleGenerateQuiz = async (materialId) => {
+        try {
+            setUploadStatus("uploading");
+            setUploadMessage("Generating quiz questions from PDF content...");
+            const res = await materialsAPI.generateQuiz(materialId);
+            setUploadMessage(`✅ ${res.message || "Quiz generated successfully!"}`);
+            setUploadStatus("success");
+        } catch (err) {
+            setUploadMessage(err.message || "Quiz generation failed. Make sure audio has been generated first.");
+            setUploadStatus("error");
+        }
+    };
+
+    const handlePublish = async (materialId) => {
+        try {
+            await materialsAPI.publish(materialId);
+            setUploadMessage("Material published successfully!");
+            setUploadStatus("success");
+            fetchMaterials();
+        } catch (err) {
+            setUploadMessage(err.message || "Failed to publish.");
+            setUploadStatus("error");
+        }
+    };
+
+    const handleLogout = () => { logout(); navigate("/auth", { replace: true }); };
+    const closeAndNavigate = (section) => { setActiveSection(section); setSidebarOpen(false); };
 
     return (
-        <div className="relative min-h-screen bg-[#050507] text-white font-sans overflow-x-hidden flex flex-col selection:bg-indigo-500/30">
-
-            {/* --- FIXED NAVBAR --- */}
-            <header className="fixed top-0 left-0 w-full z-[100] border-b border-white/10 bg-black/60 backdrop-blur-xl px-6 md:px-8 py-3 md:py-4 flex items-center justify-between">
-                <button onClick={() => setSidebarOpen(true)} className="p-2 hover:bg-white/10 rounded-xl transition-all text-indigo-400">
-                    <Menu size={22} />
+        <div className="min-h-screen bg-[#050507] text-white overflow-x-hidden">
+            {/* ── Header ─────────────────────────────────────────────────── */}
+            <header className="fixed top-0 left-0 right-0 z-50 border-b border-teal-900/30 bg-[#0a0a0f]/95 backdrop-blur-xl px-4 md:px-8 py-4 flex items-center justify-between">
+                <button
+                    onClick={() => setSidebarOpen(true)}
+                    className="p-2 hover:bg-teal-500/10 rounded-xl transition-all text-teal-400 md:hidden"
+                    aria-label="Open menu"
+                >
+                    <Menu size={24} />
                 </button>
 
-                <div className="flex items-center gap-4 cursor-pointer" onClick={() => setActiveView("dashboard")}>
-                    <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center hover:bg-white/10 transition-colors">
-                        <User size={16} />
+                {/* Desktop nav tabs */}
+                <nav className="hidden md:flex items-center gap-2">
+                    <h1 className="text-xl font-black text-white mr-6">
+                        ACCESS<span className="text-teal-400">LEARN</span> <span className="text-gray-600 text-sm font-medium">Teacher</span>
+                    </h1>
+                    {[
+                        { id: "dashboard", label: "Dashboard", icon: <Zap size={16} /> },
+                        { id: "analytics", label: "Analytics", icon: <BarChart3 size={16} /> },
+                    ].map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveSection(item.id)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all border-2 ${activeSection === item.id
+                                ? "bg-teal-400 text-black border-teal-400"
+                                : "text-gray-400 border-transparent hover:text-white hover:border-teal-900"
+                                }`}
+                        >
+                            {item.icon} {item.label}
+                        </button>
+                    ))}
+                </nav>
+
+                <div className="flex items-center gap-3 ml-auto">
+                    <span className="text-sm font-semibold hidden sm:block text-gray-300">{user?.name}</span>
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center font-black shadow-lg text-black">
+                        {user?.name?.charAt(0).toUpperCase() || "T"}
                     </div>
+                    <button
+                        onClick={handleLogout}
+                        title="Sign Out"
+                        className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-all font-bold text-sm border border-transparent hover:border-red-500/20"
+                    >
+                        <LogOut size={16} /> Sign Out
+                    </button>
                 </div>
             </header>
 
-            {/* --- DYNAMIC CONTENT --- */}
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={activeView}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                >
-                    {renderContent()}
-                </motion.div>
-            </AnimatePresence>
+            {/* ── Main Content ────────────────────────────────────────────── */}
+            <main className="pt-24 pb-8 px-4 md:px-8">
+                <div className="max-w-7xl mx-auto">
+                    <AnimatePresence mode="wait">
+                        {activeSection === "dashboard" && (
+                            <TeacherDashboardSection
+                                key="dashboard"
+                                materials={materials}
+                                analytics={analytics}
+                                loading={loading}
+                                uploadForm={uploadForm}
+                                setUploadForm={setUploadForm}
+                                selectedFile={selectedFile}
+                                handleFileSelect={handleFileSelect}
+                                handleUpload={handleUpload}
+                                handleGenerateAudio={handleGenerateAudio}
+                                handleGenerateQuiz={handleGenerateQuiz}
+                                handlePublish={handlePublish}
+                                uploadStatus={uploadStatus}
+                                uploadMessage={uploadMessage}
+                                SUBJECTS={SUBJECTS}
+                                GRADES={GRADES}
+                            />
+                        )}
+                        {activeSection === "analytics" && (
+                            <AnalyticsSection
+                                key="analytics"
+                                analytics={analytics}
+                                materials={materials}
+                            />
+                        )}
+                    </AnimatePresence>
+                </div>
+            </main>
 
-            {/* --- SIDEBAR --- */}
+            {/* ── Mobile Sidebar ──────────────────────────────────────────── */}
             <AnimatePresence>
-                {isSidebarOpen && (
+                {sidebarOpen && (
                     <>
-                        {/* Backdrop */}
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             onClick={() => setSidebarOpen(false)}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110]"
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
                         />
-
-                        {/* Sidebar Container */}
-                        <motion.div
-                            initial={{ x: "-100%" }}
-                            animate={{ x: 0 }}
-                            exit={{ x: "-100%" }}
-                            transition={{ type: "spring", damping: 20, stiffness: 100 }}
-                            // Responsive width: 85% on mobile, 320px (w-80) on desktop
-                            className="fixed left-0 top-0 h-full w-[85%] sm:w-80 bg-[#09090b]/90 backdrop-blur-2xl border-r border-white/10 z-[120] flex flex-col"
+                        <motion.nav
+                            initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+                            transition={{ type: "spring", damping: 25 }}
+                            className="fixed left-0 top-0 h-screen w-64 bg-[#0a0a0f]/95 backdrop-blur-2xl border-r border-teal-900/30 z-50 flex flex-col"
                         >
-                            {/* Header */}
-                            <div className="p-6 md:p-8 flex justify-between items-center border-b border-white/5">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
-                                        <Zap size={18} className="text-white fill-white" />
-                                    </div>
-                                    <span className="text-md font-black font-semibold tracking-wider text-white">
-                                        Access Learn
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={() => setSidebarOpen(false)}
-                                    className="p-2 hover:bg-white/5 rounded-full transition-colors text-gray-500 hover:text-white"
-                                >
+                            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                                <h2 className="text-lg font-black text-white">ACCESS<span className="text-teal-400">LEARN</span></h2>
+                                <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
                                     <X size={20} />
                                 </button>
                             </div>
-
-                            {/* Navigation Links */}
-                            <nav className="flex-1 p-4 md:p-6 flex flex-col gap-2 overflow-y-auto">
-                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-4 mb-2">Main Lab</p>
-
+                            <div className="flex-1 p-4 space-y-2">
                                 {[
-                                    { id: "dashboard", label: "Upload Center", icon: <Users size={18} />, action: scrollToUpload },
-                                    { id: "semantic", label: "Semantic Editor", icon: <BookOpen size={18} />, action: () => setActiveView("semantic") },
-                                    { id: "audio", label: "Audio Lab", icon: <Mic2 size={18} />, action: () => setActiveView("audio") },
-                                    { id: "assessment", label: "Assessment Architect", icon: <CheckCircle size={18} />, action: () => setActiveView("assessment") },
-                                    { id: "curriculum", label: "Curriculum Commander", icon: <PieChart size={18} />, action: () => setActiveView("curriculum") },
-                                    { id: "insights", label: "Insight Engine", icon: <Sparkles size={18} />, action: () => setActiveView("insights") },
-                                ].map((item, index) => (
-                                    <motion.button
+                                    { id: "dashboard", label: "Dashboard", icon: <Zap size={18} /> },
+                                    { id: "analytics", label: "Analytics", icon: <BarChart3 size={18} /> },
+                                ].map(item => (
+                                    <button
                                         key={item.id}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.05 + 0.2 }}
-                                        onClick={() => { item.action(); setSidebarOpen(false); }}
-                                        className={`group flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 ${activeView === item.id
-                                            ? "bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.1)]"
-                                            : "hover:bg-white/5 text-gray-400 hover:text-white border border-transparent"
+                                        onClick={() => closeAndNavigate(item.id)}
+                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeSection === item.id
+                                            ? "bg-teal-500/20 border border-teal-500/50 text-teal-300"
+                                            : "hover:bg-white/5 text-gray-400 hover:text-white"
                                             }`}
                                     >
-                                        <span className={`${activeView === item.id ? "text-indigo-400" : "text-gray-500 group-hover:text-indigo-400"} transition-colors`}>
-                                            {item.icon}
-                                        </span>
-                                        <span className="text-sm font-semibold tracking-wide">{item.label}</span>
-
-                                        {activeView === item.id && (
-                                            <motion.div layoutId="activePill" className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.8)]" />
-                                        )}
-                                    </motion.button>
+                                        {item.icon}<span className="font-bold">{item.label}</span>
+                                    </button>
                                 ))}
-                            </nav>
-
-                            {/* Footer / User Profile */}
-                            <div className="p-4 md:p-6 border-t border-white/5 bg-white/[0.02]">
-                                <div className="flex items-center gap-4 p-2">
-                                    <div className="relative">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg">
-                                            PA
-                                        </div>
-                                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-[#09090b] rounded-full" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-white leading-none">Prof. Alexander</span>
-                                        <span className="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">Premium Account</span>
-                                    </div>
-                                </div>
                             </div>
-                        </motion.div>
+                            <div className="p-4 border-t border-white/10">
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all font-bold"
+                                >
+                                    <LogOut size={18} /><span>Sign Out</span>
+                                </button>
+                            </div>
+                        </motion.nav>
                     </>
                 )}
             </AnimatePresence>
@@ -292,159 +260,425 @@ export default function TeacherDashboard() {
     );
 }
 
-// --- REDUCED PARTICLE CANVAS BACKGROUND (Unchanged) ---
-function ReducedParticleBackground() {
-    const canvasRef = useRef(null);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        let animationId;
-        let particles = [];
-
-        const resize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
-        resize();
-        window.addEventListener('resize', resize);
-
-        class Particle {
-            constructor() { this.reset(); }
-
-            reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2.5 + 0.8;
-                this.speedX = (Math.random() - 0.5) * 0.3;
-                this.speedY = (Math.random() - 0.5) * 0.3;
-                this.opacity = Math.random() * 0.3 + 0.1;
-                this.hue = Math.random() * 30 + 235;
-            }
-
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-
-                if (this.x < 0) this.x = canvas.width;
-                if (this.x > canvas.width) this.x = 0;
-                if (this.y < 0) this.y = canvas.height;
-                if (this.y > canvas.height) this.y = 0;
-            }
-
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = `hsla(${this.hue}, 80%, 65%, ${this.opacity})`;
-                ctx.fill();
-            }
-        }
-
-        for (let i = 0; i < 25; i++) particles.push(new Particle());
-
-        const orbs = [
-            { x: canvas.width * 0.2, y: canvas.height * 0.2, radius: 400, hue: 245, speedX: 0.1, speedY: 0.1 },
-            { x: canvas.width * 0.8, y: canvas.height * 0.8, radius: 450, hue: 160, speedX: -0.08, speedY: 0.08 },
-            { x: canvas.width * 0.6, y: canvas.height * 0.3, radius: 300, hue: 260, speedX: 0.05, speedY: -0.05 },
-        ];
-
-        const animate = () => {
-            ctx.fillStyle = 'rgba(5, 5, 7, 0.2)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            orbs.forEach(orb => {
-                orb.x += orb.speedX;
-                orb.y += orb.speedY;
-
-                if (orb.x < -orb.radius) orb.x = canvas.width + orb.radius;
-                if (orb.x > canvas.width + orb.radius) orb.x = -orb.radius;
-                if (orb.y < -orb.radius) orb.y = canvas.height + orb.radius;
-                if (orb.y > canvas.height + orb.radius) orb.y = -orb.radius;
-
-                const gradient = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.radius);
-                gradient.addColorStop(0, `hsla(${orb.hue}, 70%, 55%, 0.12)`);
-                gradient.addColorStop(0.6, `hsla(${orb.hue}, 60%, 45%, 0.05)`);
-                gradient.addColorStop(1, 'transparent');
-
-                ctx.beginPath();
-                ctx.arc(orb.x, orb.y, orb.radius, 0, Math.PI * 2);
-                ctx.fillStyle = gradient;
-                ctx.fill();
-            });
-
-            particles.forEach(p => { p.update(); p.draw(); });
-
-            animationId = requestAnimationFrame(animate);
-        };
-
-        animate();
-
-        return () => {
-            window.removeEventListener('resize', resize);
-            cancelAnimationFrame(animationId);
-        };
-    }, []);
-
-    return <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none" />;
-}
-
-// --- ORB COMPONENT WITH FLOAT & GLOW ANIMATION ---
-function CircularStat({ icon, label, value, color, size = "large", variants, mobile }) {
-    const isEmerald = color === "emerald";
-
-    // Vibrant glow colors
-    const glowColor = isEmerald ? "rgba(16,185,129,0.4)" : "rgba(99,102,241,0.4)";
-    const borderGlow = isEmerald ? "border-emerald-500/50" : "border-indigo-500/50";
-    const textColor = isEmerald ? "text-emerald-400" : "text-indigo-400";
-
-    // Responsive Sizing
-    const circleSize = mobile
-        ? "w-28 h-28 sm:w-32 sm:h-32"
-        : (size === "large" ? "w-40 h-40" : "w-32 h-32");
-
-    const iconSize = mobile ? 18 : (size === "large" ? 22 : 18);
-    const valueText = mobile ? "text-xl" : (size === "large" ? "text-2xl" : "text-xl");
-
-    const floatDelay = value === '1.2k' ? 0.2 : value === '48' ? 0.4 : 1;
+// ─── Teacher Dashboard Section ───────────────────────────────────────────────
+function TeacherDashboardSection({
+    materials, analytics, loading, uploadForm, setUploadForm, selectedFile,
+    handleFileSelect, handleUpload, handleGenerateAudio, handleGenerateQuiz, handlePublish, uploadStatus,
+    uploadMessage, SUBJECTS, GRADES
+}) {
+    const published = materials.filter(m => m.status === "published");
+    const withAudio = materials.filter(m => m.audioUrl || (m.chapters && m.chapters.some(c => c.audioUrl)));
 
     return (
         <motion.div
-            variants={variants}
-            animate={{
-                y: [0, -12, 0],
-                boxShadow: [
-                    `0 0 25px ${glowColor}, inset 0 0 20px rgba(255,255,255,0.06)`,
-                    `0 0 40px ${isEmerald ? "rgba(20,220,150,0.9)" : "rgba(120,130,250,0.9)"}, inset 0 0 20px rgba(255,255,255,0.06)`,
-                    `0 0 25px ${glowColor}, inset 0 0 20px rgba(255,255,255,0.06)`
-                ]
-            }}
-            transition={{
-                duration: 5,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: floatDelay
-            }}
-            whileHover={{
-                scale: 1.05,
-                borderColor: "rgba(255,255,255,0.8)",
-                transition: { duration: 0.3 }
-            }}
-            className={`group relative ${circleSize} flex flex-col items-center justify-center rounded-full border-2 ${borderGlow} bg-black/60 backdrop-blur-md transition-all duration-50 cursor-pointer`}
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+            className="space-y-8"
         >
-            {/* Icon */}
-            <div className={`mb-1 transition-colors ${textColor}`}>
-                {React.cloneElement(icon, { size: iconSize })}
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                    { label: "Total Materials", value: materials.length, icon: <FileText size={22} />, accent: "teal" },
+                    { label: "Published", value: published.length, icon: <CheckCircle size={22} />, accent: "white" },
+                    { label: "With Audio", value: withAudio.length, icon: <Volume2 size={22} />, accent: "teal" },
+                    { label: "Student Reach", value: analytics?.totalStudents || 0, icon: <Users size={22} />, accent: "white" },
+                ].map((stat, i) => (
+                    <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+                        whileHover={{ scale: 1.03 }}
+                        className="p-6 rounded-2xl bg-[#0a0a0f] border border-teal-900/30 hover:border-teal-600/40 transition-all"
+                    >
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-gray-400 text-sm font-semibold">{stat.label}</p>
+                                <p className="text-4xl font-black mt-2 text-white">{stat.value}</p>
+                            </div>
+                            <div className={`p-3 rounded-xl ${stat.accent === "teal" ? "bg-teal-500/10 text-teal-400" : "bg-white/5 text-white"}`}>
+                                {stat.icon}
+                            </div>
+                        </div>
+                    </motion.div>
+                ))}
             </div>
 
-            {/* Value */}
-            <span className={`${valueText} font-bold tracking-tight text-white`}>{value}</span>
+            {/* Upload Section */}
+            <div className="bg-[#0a0a0f] border border-teal-900/30 rounded-2xl p-6 md:p-8">
+                <h2 className="text-2xl font-black mb-6 flex items-center gap-3 text-white">
+                    <Upload size={24} className="text-teal-400" /> Upload &amp; Generate Audio
+                </h2>
 
-            {/* Label */}
-            <span className="text-[8px] sm:text-[9px] uppercase tracking-tighter text-gray-400 mt-0.5 font-medium">{label}</span>
+                {uploadMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                        className={`mb-6 p-4 rounded-xl border flex items-center gap-3 font-semibold ${uploadStatus === "error"
+                            ? "bg-red-500/10 border-red-500/30 text-red-400"
+                            : uploadStatus === "uploading"
+                                ? "bg-teal-500/10 border-teal-500/30 text-teal-400"
+                                : "bg-teal-500/10 border-teal-500/30 text-teal-400"
+                            }`}
+                    >
+                        {uploadStatus === "uploading" && <Sparkles size={18} className="animate-spin" />}
+                        {uploadMessage}
+                    </motion.div>
+                )}
 
-            {/* Decorative Outer Ring */}
-            <div className="absolute inset-[-6px] rounded-full border border-white/[0.1] pointer-events-none group-hover:border-white/20 group-hover:rotate-180 transition-transform duration-1000" />
+                <div className="space-y-6">
+                    {/* Drop zone */}
+                    <div
+                        onClick={() => document.getElementById("pdfInput")?.click()}
+                        className="border-2 border-dashed border-teal-900/50 rounded-xl p-10 text-center hover:border-teal-500/50 transition-all cursor-pointer bg-teal-900/5"
+                    >
+                        <input id="pdfInput" type="file" accept=".pdf" onChange={handleFileSelect} className="hidden" />
+                        <FileText size={48} className="mx-auto mb-3 text-teal-700" />
+                        <p className="text-white font-black text-lg">
+                            {selectedFile ? selectedFile.name : "Click to upload a PDF"}
+                        </p>
+                        <p className="text-gray-500 text-sm mt-1">Maximum 50 MB</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input
+                            type="text" placeholder="Material Title *"
+                            value={uploadForm.title}
+                            onChange={e => setUploadForm(p => ({ ...p, title: e.target.value }))}
+                            className="px-4 py-3 rounded-xl bg-white/5 border border-teal-900/30 focus:border-teal-500 focus:bg-white/10 outline-none text-white placeholder:text-gray-600 transition-all"
+                        />
+                        <select
+                            value={uploadForm.subject}
+                            onChange={e => setUploadForm(p => ({ ...p, subject: e.target.value }))}
+                            className="px-4 py-3 rounded-xl bg-white/5 border border-teal-900/30 focus:border-teal-500 outline-none text-white transition-all"
+                        >
+                            {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <select
+                            value={uploadForm.gradeLevel}
+                            onChange={e => setUploadForm(p => ({ ...p, gradeLevel: e.target.value }))}
+                            className="px-4 py-3 rounded-xl bg-white/5 border border-teal-900/30 focus:border-teal-500 outline-none text-white transition-all"
+                        >
+                            {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                        <input
+                            type="text" placeholder="Chapter (optional)"
+                            value={uploadForm.chapter}
+                            onChange={e => setUploadForm(p => ({ ...p, chapter: e.target.value }))}
+                            className="px-4 py-3 rounded-xl bg-white/5 border border-teal-900/30 focus:border-teal-500 focus:bg-white/10 outline-none text-white placeholder:text-gray-600 transition-all"
+                        />
+                    </div>
+
+                    <button
+                        onClick={handleUpload}
+                        disabled={uploadStatus === "uploading"}
+                        className="w-full px-6 py-4 bg-teal-500 hover:bg-teal-400 disabled:bg-gray-700 rounded-xl font-black transition-all flex items-center justify-center gap-2 text-black text-lg"
+                    >
+                        {uploadStatus === "uploading" ? "Uploading..." : "Upload PDF"}
+                    </button>
+                </div>
+            </div>
+
+            {/* Materials List */}
+            <div className="bg-[#0a0a0f] border border-teal-900/30 rounded-2xl p-6 md:p-8">
+                <h2 className="text-2xl font-black mb-6 flex items-center gap-3 text-white">
+                    <BookOpen size={24} className="text-teal-400" /> Your Materials
+                    <span className="ml-auto text-sm font-bold bg-teal-500/10 text-teal-400 px-3 py-1 rounded-full">{materials.length} total</span>
+                </h2>
+                <div className="space-y-3">
+                    {materials.length === 0 ? (
+                        <p className="text-gray-500 text-center py-12">No materials yet. Upload a PDF above to get started.</p>
+                    ) : materials.map(material => (
+                        <div key={material._id} className="p-5 bg-white/[0.02] border border-teal-900/20 rounded-xl hover:border-teal-700/40 transition-all">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div>
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="text-lg font-black text-white">{material.title}</h3>
+                                        {material.status === "published" && (
+                                            <span className="text-xs bg-teal-400/10 text-teal-400 border border-teal-400/20 px-2 py-0.5 rounded-full font-bold">Published</span>
+                                        )}
+                                    </div>
+                                    <p className="text-sm text-gray-400 mt-1">{material.subject} • {material.gradeLevel}</p>
+                                    {material.chapters?.length > 0 && (
+                                        <p className="text-xs text-gray-600 mt-1">{material.chapters.length} chapters detected</p>
+                                    )}
+                                </div>
+                                <div className="flex gap-2 flex-wrap">
+                                    {/* Generate Audio — only if no audio exists yet */}
+                                    {!material.audioUrl && !(material.chapters?.some(c => c.audioUrl)) && (
+                                        <button
+                                            onClick={() => handleGenerateAudio(material._id)}
+                                            className="px-4 py-2 bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/20 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all"
+                                        >
+                                            <Music size={14} /> Generate Audio
+                                        </button>
+                                    )}
+                                    {/* Re-generate Audio — if audio exists, allow regenerating */}
+                                    {(material.audioUrl || material.chapters?.some(c => c.audioUrl)) && (
+                                        <button
+                                            onClick={() => handleGenerateAudio(material._id)}
+                                            className="px-4 py-2 bg-teal-900/20 hover:bg-teal-500/20 text-teal-600 hover:text-teal-400 border border-teal-900/30 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all"
+                                            title="Re-generate audio"
+                                        >
+                                            <Music size={14} /> Re-Generate
+                                        </button>
+                                    )}
+                                    {/* Generate Quiz — only if chapters with transcripts exist */}
+                                    {material.chapters?.length > 0 && (
+                                        <button
+                                            onClick={() => handleGenerateQuiz(material._id)}
+                                            className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all"
+                                        >
+                                            <Sparkles size={14} /> Generate Quiz
+                                        </button>
+                                    )}
+                                    {/* Publish */}
+                                    {material.status !== "published" && (
+                                        <button
+                                            onClick={() => handlePublish(material._id)}
+                                            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all"
+                                        >
+                                            <CheckCircle size={14} /> Publish
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
+// ─── Analytics Section ───────────────────────────────────────────────────────
+function AnalyticsSection({ analytics, materials }) {
+    const [students, setStudents] = useState([]);
+    const [loadingStudents, setLoadingStudents] = useState(false);
+    const [studentError, setStudentError] = useState(null);
+    const [studentData, setStudentData] = useState({});
+
+    const fetchStudents = () => {
+        setLoadingStudents(true);
+        setStudentError(null);
+        analyticsAPI.getStudents()
+            .then(res => {
+                const d = res.data || {};
+                setStudents(d.students || []);
+                setStudentData(d);
+            })
+            .catch(err => setStudentError(err.message || "Failed to load analytics"))
+            .finally(() => setLoadingStudents(false));
+    };
+
+    useEffect(() => { fetchStudents(); }, []);
+
+    const avgQuizScore = studentData.avgQuizScoreAll ?? 0;
+    const totalListenedMins = studentData.totalListenedMinutes ?? 0;
+    const publishedCount = materials.filter(m => m.status === "published").length;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            className="space-y-8"
+        >
+            {/* Overview Header */}
+            <div>
+                <h2 className="text-4xl font-black text-white mb-1">Student Analytics</h2>
+                <p className="text-gray-400 font-medium">Track how your students are engaging with your materials.</p>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                    {
+                        label: "Total Students",
+                        value: students.length,
+                        icon: <Users size={22} />,
+                        sub: "engaged with your content",
+                        teal: true,
+                    },
+                    {
+                        label: "Hours Listened",
+                        value: `${Math.round(totalListenedMins / 60)}h`,
+                        icon: <Clock size={22} />,
+                        sub: `${totalListenedMins} minutes total`,
+                        teal: false,
+                    },
+                    {
+                        label: "Avg Quiz Score",
+                        value: `${avgQuizScore}%`,
+                        icon: <Award size={22} />,
+                        sub: "across all students",
+                        teal: true,
+                    },
+                    {
+                        label: "Published Materials",
+                        value: publishedCount,
+                        icon: <BookOpen size={22} />,
+                        sub: `of ${materials.length} total`,
+                        teal: false,
+                    },
+                ].map((s, i) => (
+                    <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+                        className="p-6 bg-[#0a0a0f] border border-teal-900/30 rounded-2xl hover:border-teal-600/40 transition-all"
+                    >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${s.teal ? "bg-teal-500/10 text-teal-400" : "bg-white/5 text-white"}`}>
+                            {s.icon}
+                        </div>
+                        <p className="text-4xl font-black text-white">{s.value}</p>
+                        <p className="text-xs text-gray-500 font-semibold mt-1 uppercase tracking-wider">{s.label}</p>
+                        <p className="text-xs text-gray-600 mt-1">{s.sub}</p>
+                    </motion.div>
+                ))}
+            </div>
+
+            {/* Student Engagement Table */}
+            <div className="bg-[#0a0a0f] border border-teal-900/30 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-black text-white flex items-center gap-2">
+                        <TrendingUp size={22} className="text-teal-400" /> Student Progress
+                    </h3>
+                    <button onClick={fetchStudents} className="text-xs text-teal-400 hover:text-teal-300 font-bold border border-teal-900/50 px-3 py-1.5 rounded-lg hover:border-teal-600/40 transition-all">
+                        Refresh
+                    </button>
+                </div>
+
+                {loadingStudents ? (
+                    <div className="text-center py-16">
+                        <div className="w-10 h-10 border-4 border-teal-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                        <p className="text-gray-400 font-semibold">Loading student data...</p>
+                    </div>
+                ) : studentError ? (
+                    <div className="text-center py-16">
+                        <p className="text-red-400 mb-4 font-semibold">⚠️ {studentError}</p>
+                        <button onClick={fetchStudents} className="px-5 py-2.5 bg-teal-500/10 text-teal-400 rounded-xl hover:bg-teal-500/20 transition-all text-sm font-bold border border-teal-500/20">
+                            Retry
+                        </button>
+                    </div>
+                ) : students.length === 0 ? (
+                    <div className="text-center py-16">
+                        <Users size={48} className="mx-auto mb-4 text-gray-700" />
+                        <p className="text-gray-400 font-semibold">No students have accessed your materials yet.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {students.map((s, i) => {
+                            const pct = s.avgCompletion || 0;
+                            const scoreColor = s.avgQuizScore >= 70 ? "text-teal-400" : s.avgQuizScore >= 40 ? "text-amber-400" : "text-red-400";
+                            const progressColor = pct >= 70 ? "bg-gradient-to-r from-teal-500 to-teal-300" : pct >= 40 ? "bg-gradient-to-r from-amber-600 to-amber-400" : "bg-gradient-to-r from-red-700 to-red-500";
+                            return (
+                                <motion.div
+                                    key={s._id || i}
+                                    initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                                    className="p-5 bg-white/[0.02] border border-teal-900/20 rounded-xl hover:border-teal-700/30 transition-all"
+                                >
+                                    <div className="flex flex-col md:flex-row md:items-center gap-4">
+                                        {/* Avatar + name */}
+                                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                                            <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-teal-600 to-teal-900 flex items-center justify-center font-black text-black">
+                                                {s.name?.charAt(0).toUpperCase() || "S"}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="font-black text-white truncate">{s.name}</p>
+                                                <p className="text-xs text-gray-500 truncate">{s.email}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Stats row */}
+                                        <div className="grid grid-cols-3 gap-4 md:w-auto md:flex md:gap-6 text-center md:text-left">
+                                            <div>
+                                                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Materials</p>
+                                                <p className="font-black text-white mt-0.5">{s.materialsAccessed || 0}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Completed</p>
+                                                <p className="font-black text-white mt-0.5">{s.completedCount || 0}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Quiz Score</p>
+                                                <p className={`font-black mt-0.5 ${scoreColor}`}>{s.avgQuizScore || 0}%</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Progress bar */}
+                                    <div className="mt-4 space-y-1.5">
+                                        <div className="flex justify-between text-xs font-semibold">
+                                            <span className="text-gray-500">Avg Completion</span>
+                                            <span className="text-white">{pct}%</span>
+                                        </div>
+                                        <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${pct}%` }}
+                                                transition={{ duration: 1, ease: "easeOut", delay: i * 0.05 }}
+                                                className={`h-full rounded-full ${progressColor}`}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {s.lastActive && (
+                                        <p className="text-[11px] text-gray-600 mt-2 font-medium">
+                                            Last active: {new Date(s.lastActive).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                        </p>
+                                    )}
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Material Performance */}
+            <div className="bg-[#0a0a0f] border border-teal-900/30 rounded-2xl p-6">
+                <h3 className="text-xl font-black mb-6 text-white flex items-center gap-2">
+                    <BookOpen size={22} className="text-teal-400" /> Material Performance
+                </h3>
+                {materials.filter(m => m.status === "published").length === 0 ? (
+                    <p className="text-gray-500 text-center py-10">No published materials yet.</p>
+                ) : (
+                    <div className="space-y-4">
+                        {materials.filter(m => m.status === "published").map(m => {
+                            const maxViews = Math.max(...materials.map(x => x.totalViews || 0), 1);
+                            const barPct = Math.round(((m.totalViews || 0) / maxViews) * 100);
+                            return (
+                                <div key={m._id} className="p-4 bg-white/[0.02] border border-teal-900/20 rounded-xl">
+                                    <div className="flex flex-col md:flex-row md:items-center gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-black text-white truncate">{m.title}</h4>
+                                            <p className="text-xs text-gray-500 mt-0.5">{m.subject} • {m.gradeLevel} • {m.chapters?.length || 0} chapters</p>
+                                        </div>
+                                        <div className="flex gap-6 text-sm shrink-0">
+                                            <div className="text-center">
+                                                <div className="flex items-center gap-1 text-gray-500 text-[10px] font-semibold uppercase"><Eye size={10} /> Views</div>
+                                                <p className="font-black text-teal-400 text-lg">{m.totalViews || 0}</p>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="flex items-center gap-1 text-gray-500 text-[10px] font-semibold uppercase"><Volume2 size={10} /> Listens</div>
+                                                <p className="font-black text-teal-400 text-lg">{m.totalListens || 0}</p>
+                                            </div>
+                                            {m.averageRating != null && (
+                                                <div className="text-center">
+                                                    <div className="flex items-center gap-1 text-gray-500 text-[10px] font-semibold uppercase"><Star size={10} /> Rating</div>
+                                                    <p className="font-black text-white text-lg">{m.averageRating?.toFixed(1) || "—"}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {/* Relative bar */}
+                                    <div className="mt-3 h-2 bg-white/5 rounded-full overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${barPct}%` }}
+                                            transition={{ duration: 1, ease: "easeOut" }}
+                                            className="h-full bg-gradient-to-r from-teal-500 to-teal-300 rounded-full"
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </motion.div>
     );
 }

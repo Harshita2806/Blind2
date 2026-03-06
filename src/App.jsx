@@ -1,25 +1,100 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import AuthPage from "./pages/AuthPage";
-import LandingPage from "./pages/LandingPage"; // Import the new Landing Page
-import Teacher from "./pages/TeacherPage"; // Import the new Landing Page
-import Student from "./pages/StudentPage"; // Import the new Landing Page
+import LandingPage from "./pages/LandingPage";
+import Teacher from "./pages/TeacherPage";
+import Student from "./pages/StudentPage";
+import QuizPage from "./pages/QuizPage";
+
+// ─── Protected Route ──────────────────────────────────────────────────────────
+function ProtectedRoute({ children, requiredRole }) {
+  const { user, token, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050507] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!token || !user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (requiredRole && user.role !== requiredRole) {
+    // Wrong role — redirect to their correct dashboard
+    return <Navigate to={user.role === "teacher" ? "/teacher" : "/student"} replace />;
+  }
+
+  return children;
+}
+
+// ─── Auth Route (redirect to dashboard if already logged in) ─────────────────
+function AuthRoute({ children }) {
+  const { user, token, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050507] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (token && user) {
+    return <Navigate to={user.role === "teacher" ? "/teacher" : "/student"} replace />;
+  }
+
+  return children;
+}
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Root Route: Shows the new Landing Page */}
-        <Route path="/" element={<LandingPage />} />
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<LandingPage />} />
 
-        {/* Auth Routes: Shows Login/Signup */}
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/login" element={<AuthPage />} />
-        <Route path="/signup" element={<AuthPage />} />
+          <Route path="/auth" element={<AuthRoute><AuthPage /></AuthRoute>} />
+          <Route path="/login" element={<AuthRoute><AuthPage /></AuthRoute>} />
+          <Route path="/signup" element={<AuthRoute><AuthPage defaultMode="signup" /></AuthRoute>} />
 
-        {/* Dashboard Route */}
-        <Route path="/teacher" element={<Teacher />} />
-        <Route path="/student" element={<Student />} />
-      </Routes>
-    </Router>
+          {/* Protected — Teacher */}
+          <Route
+            path="/teacher"
+            element={
+              <ProtectedRoute requiredRole="teacher">
+                <Teacher />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected — Student */}
+          <Route
+            path="/student"
+            element={
+              <ProtectedRoute requiredRole="student">
+                <Student />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected — Quiz */}
+          <Route
+            path="/quiz/:quizId"
+            element={
+              <ProtectedRoute>
+                <QuizPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
