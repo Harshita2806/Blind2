@@ -54,19 +54,33 @@ const badgeVariants = {
 
 export default function LandingPage() {
     return (
-        <div className="bg-[#050505] text-white font-sans selection:bg-indigo-500/30 h-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar">
+        <div className="bg-[#050505] - font-sans selection:bg-indigo-500/30 h-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar">
             <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400&family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap');
+                
+                .font-lora { font-family: 'Lora', serif; }
+                .font-nunito { font-family: 'Nunito Sans', sans-serif; }
+                
                 .no-scrollbar::-webkit-scrollbar { display: none; }
                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
                 
-                @keyframes glow {
-                    0%, 100% { text-shadow: 0 0 10px rgba(99, 102, 241, 0.2), 0 0 20px rgba(99, 102, 241, 0.2); }
-                    50% { text-shadow: 0 0 20px rgba(99, 102, 241, 0.6), 0 0 40px rgba(99, 102, 241, 0.4); }
+                .gradient-text-teal {
+                    background: linear-gradient(135deg, #ffffff 45%, #14b8a6 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
                 }
-                .animate-glow { animation: glow 3s ease-in-out infinite; }
-                .perspective-1000 { perspective: 1000px; }
-            `}</style>
 
+                .btn-stealth-teal {
+                    background: linear-gradient(145deg, #0d9488 0%, #14b8a6 100%);
+                    box-shadow: 0 4px 15px rgba(20, 184, 166, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                    transition: all 0.3s ease;
+                }
+                
+                .btn-stealth-teal:hover {
+                    filter: brightness(1.1);
+                    box-shadow: 0 6px 20px rgba(20, 184, 166, 0.3);
+                }
+            `}</style>
             <Header />
 
             <div className="snap-start"><HeroSection /></div>
@@ -103,45 +117,6 @@ export default function LandingPage() {
 }
 
 
-// --- IMPACT SLIDES SECTION ---
-function ImpactSlides() {
-    const slides = [
-        {
-            icon: <Users className="text-indigo-500 mb-6" size={48} />,
-            title: "10,000+ Blind & Visually Impaired Learners Supported",
-            desc: "Building independence through accessible education.",
-            bg: "bg-indigo-600/5"
-        },
-        {
-            icon: <Library className="text-indigo-500 mb-6" size={48} />,
-            title: "500+ Audio-Based Courses Available",
-            desc: "From academics to skill development — fully narrated and accessible.",
-            bg: "bg-purple-600/5"
-        },
-        {
-            icon: <Heart className="text-indigo-500 mb-6" size={48} />,
-            title: "98% Learner Satisfaction Rate",
-            desc: "Because accessibility isn’t an add-on — it’s our foundation.",
-            bg: "bg-blue-600/5"
-        }
-    ];
-
-    return (
-        <>
-            {slides.map((slide, index) => (
-                <section key={index} className={`snap-start h-screen w-full flex flex-col items-center justify-center px-6 relative overflow-hidden ${slide.bg}`}>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 blur-[120px] rounded-full z-0" />
-                    <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ amount: 0.5 }} className="relative z-10 text-center max-w-4xl">
-                        <div className="flex justify-center">{slide.icon}</div>
-                        <h2 className="text-4xl md:text-7xl font-bold mb-8 tracking-tight animate-glow leading-tight">{slide.title}</h2>
-                        <p className="text-xl md:text-2xl text-gray-400 font-light">{slide.desc}</p>
-                        <motion.div initial={{ width: 0 }} whileInView={{ width: "100px" }} className="h-1 bg-indigo-500 mx-auto mt-12 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
-                    </motion.div>
-                </section>
-            ))}
-        </>
-    );
-}
 
 // --- HEADER ---
 function Header() {
@@ -153,21 +128,22 @@ function Header() {
         { name: "Features", slug: "features" },
         { name: "How It Works", slug: "how-it-works" },
         { name: "Contact", slug: "contact" },
-        { name: "Teacher", path: "/teacher" }, // Route path
-        { name: "Student", path: "/student" }  // Route path
+
     ];
 
     return (
         <motion.header
             initial={{ y: -100 }}
             animate={{ y: 0 }}
-            className="fixed top-0 left-0 right-0 z-50 bg-brand-bg/80 backdrop-blur-lg border-b border-white/5"
+            className="fixed top-0 left-0 right-0 z-50 bg-brand-bg/80 backdrop-blur-lg border-b border-white/10"
         >
             <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-                <a href="/" className="flex items-center gap-2 text-brand-primary font-bold text-xl">
-                    <BookOpen size={24} />
+                <Link to="/" className="flex items-center gap-2 text-white font-lora font-bold text-2xl tracking-tight">
+                    <div className="p-1 rounded-lg bg-gradient-to-br from-[#14b8a6] to-[#0d9488]">
+                        <BookOpen size={20} className="text-black" />
+                    </div>
                     <span>AccessLearn</span>
-                </a>
+                </Link>
 
                 <nav className="hidden md:flex items-center gap-8">
                     {navLinks.map(link => {
@@ -188,7 +164,7 @@ function Header() {
                             <a
                                 key={link.name}
                                 href={`#${link.slug}`}
-                                className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
+                                className="text-[#888888] hover:text-[#14b8a6] transition-colors text-sm font-semibold tracking-wide"
                             >
                                 {link.name}
                             </a>
@@ -210,62 +186,459 @@ function Header() {
     );
 }
 
+
 function HeroSection() {
-    const titlePart1 = "Accessible Learning,".split(" ");
-    const titlePart2 = "Powered by AI".split(" ");
     return (
         <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
-            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[120px] rounded-full" />
-            <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-                <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-                    <motion.div variants={badgeVariants} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold mb-6"><Sparkles size={14} /> NEW: AI MATH NARRATION</motion.div>
-                    <h1 className="text-5xl lg:text-7xl font-bold leading-[1.1] mb-6 flex flex-wrap">
-                        {titlePart1.map((word, i) => (<motion.span key={`p1-${i}`} variants={wordVariants} className="inline-block mr-3">{word}</motion.span>))}
-                        <span className="text-indigo-500 flex flex-wrap">{titlePart2.map((word, i) => (<motion.span key={`p2-${i}`} variants={wordVariants} className="inline-block mr-3">{word}</motion.span>))}</span>
-                    </h1>
-                    <motion.p variants={wordVariants} className="text-gray-400 text-lg mb-8 max-w-lg">Breaking digital barriers for visually impaired students.</motion.p>
-                    <motion.div variants={wordVariants}><button className="bg-white text-black px-8 py-4 rounded-2xl font-bold flex items-center gap-2 hover:bg-indigo-500 hover:text-white transition-all">Start Learning <ArrowRight size={20} /></button></motion.div>
+
+            {/* Subtle Stealth Ambient Light */}
+            <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[60%] bg-[#14b8a6]/5 blur-[120px] rounded-full pointer-events-none" />
+
+            <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center relative z-10">
+
+                <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={containerVariants}
+                >
+
+                    <motion.div
+                        variants={badgeVariants}
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ type: "spring", stiffness: 200 }}
+                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#111] border border-[#222] text-[#14b8a6] text-[10px] font-black uppercase tracking-widest mb-8"
+                    >
+                        <Sparkles size={12} /> AI MATH NARRATION
+                    </motion.div>
+
+                    <motion.h1
+                        initial={{ opacity: 0, y: 40 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 2, ease: "easeOut" }}
+                        className="text-6xl lg:text-7xl font-bold font-lora leading-[1.1] mb-8 tracking-tight"
+                    >
+                        Accessible <span className="italic font-normal">Learning</span>, <br />
+
+                        <motion.span
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.6 }}
+                            className="gradient-text-teal font-nunito font-extrabold uppercase tracking-tighter"
+                        >
+                            Powered by AI
+                        </motion.span>
+
+                    </motion.h1>
+
+                    <motion.p
+                        variants={wordVariants}
+                        initial="hidden"
+                        animate="visible"
+                        transition={{ delay: 0.8 }}
+                        className="text-[#a3a3a3] text-lg mb-10 max-w-md font-nunito font-light leading-relaxed"
+                    >
+                        Breaking digital barriers for visually impaired students with surgical precision in audio delivery.
+                    </motion.p>
+
+                    <motion.div
+                        variants={wordVariants}
+                        initial="hidden"
+                        animate="visible"
+                        transition={{ delay: 1 }}
+                    >
+
+                        <motion.button
+                            whileHover={{
+                                scale: 1.05,
+                                boxShadow: "0 0 30px rgba(20,184,166,0.35)"
+                            }}
+                            whileTap={{ scale: 0.96 }}
+                            className="btn-stealth-teal text-white px-10 py-4 rounded-xl font-bold text-base flex items-center gap-3 group transition-all font-nunito"
+                        >
+                            Start Learning
+
+                            <ArrowRight
+                                size={20}
+                                className="group-hover:translate-x-1 transition-transform"
+                            />
+
+                        </motion.button>
+
+                    </motion.div>
+
                 </motion.div>
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1 }} className="rounded-[40px] border border-white/10 overflow-hidden bg-[#111] hidden lg:block"><img src={heroImage} alt="App Interface" className="w-full h-auto" /></motion.div>
+
+
+                {/* IMAGE SECTION */}
+
+                <motion.div
+                    initial={{ opacity: 0, y: 60 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1.2 }}
+                    className="relative hidden lg:block"
+                >
+
+                    <motion.div
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{
+                            duration: 4,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                        whileHover={{
+                            scale: 1.03,
+                            boxShadow: "0 30px 80px rgba(20,184,166,0.25)"
+                        }}
+                        className="relative rounded-[32px] border border-transparent overflow-hidden bg-[#0a0a0a] shadow-2xl shadow-black transition-all duration-500"
+                    >
+
+                        <motion.img
+                            src={heroImage}
+                            alt="App Interface"
+                            className="w-full h-full object-cover inline"
+                        />
+
+                        {/* subtle glow on hover */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            whileHover={{ opacity: 1 }}
+                            transition={{ duration: 0.7 }}
+                            className="absolute inset-0 bg-linear-to-tr from-brand-primary/10 to-transparent pointer-events-none"
+                        />
+
+                    </motion.div>
+
+                </motion.div>
+
             </div>
         </section>
     );
 }
 
+
+
+
+
+
 function ProblemSolution() {
-    const rowVariants = { hiddenLeft: { opacity: 0, x: -60 }, hiddenRight: { opacity: 0, x: 60 }, visible: { opacity: 1, x: 0 } };
+
+    const rowVariants = {
+        hiddenLeft: { opacity: 0, x: -60 },
+        hiddenRight: { opacity: 0, x: 60 },
+        visible: { opacity: 1, x: 0 }
+    };
+
     return (
         <>
-            <section className="snap-start h-screen w-full flex flex-col items-center justify-center bg-[#050505] px-6 no-scrollbar">
-                <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="mb-10 text-center">
-                    <h2 className="text-4xl md:text-5xl font-bold italic">Inclusive <span className="text-indigo-500">By Design</span></h2>
+
+            {/* PROBLEM SECTION */}
+
+            <section className="snap-start h-screen w-full flex flex-col items-center justify-center bg-[#050505] px-6">
+
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    className="mb-14 text-center"
+                >
+
+                    <h2 className="text-4xl md:text-6xl font-[Playfair_Display] font-semibold tracking-tight text-white">
+
+                        Inclusive
+
+                        <span className="text-[#14b8a6] italic font-light ml-2">
+                            By Design
+                        </span>
+
+                    </h2>
+
+                    <p className="text-[#7a7a7a] font-inter text-sm mt-3 tracking-wide">
+                        Accessibility is not a feature — it is the foundation.
+                    </p>
+
                 </motion.div>
-                <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 h-[65vh]">
-                    <motion.div variants={rowVariants} initial="hiddenLeft" whileInView="visible" transition={springTransition} viewport={{ once: false, amount: 0.4 }} className="bg-white/5 backdrop-blur-lg border border-white/10 p-10 rounded-[40px] flex flex-col justify-center transform-gpu">
-                        <AlertCircle className="text-red-200 mb-6" size={40} />
-                        <h3 className="text-3xl font-bold mb-4 uppercase">The Barrier</h3>
-                        <p className="text-gray-400 text-lg leading-relaxed">Traditional e-learning is 90% visual. Without sight, students encounter "Digital Walls".</p>
+
+
+                <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-10 h-[60vh]">
+
+                    {/* LEFT CARD */}
+
+                    <motion.div
+                        variants={rowVariants}
+                        initial="hiddenLeft"
+                        whileInView="visible"
+                        transition={springTransition}
+                        className="bg-[#0f0f0f] border border-[#222] p-12 rounded-[32px] flex flex-col justify-center"
+                    >
+
+                        <AlertCircle className="text-[#999898] mb-6" size={40} />
+
+                        <h3 className="text-xs font-black text-[#14b8a6] uppercase tracking-[0.35em] mb-5 font-nunito">
+
+                            The Barrier
+
+                        </h3>
+
+                        <h2 className="text-4xl md:text-5xl font-[Playfair_Display] font-semibold italic tracking-tight mb-6 text-white">
+
+                            E-learning is 90% visual.
+
+                        </h2>
+
+                        <p className="text-[#a3a3a3] text-lg font-inter font-light leading-relaxed max-w-md">
+
+                            Without sight, students encounter digital barriers that make modern
+                            learning platforms difficult to navigate and understand.
+
+                        </p>
+
                     </motion.div>
-                    <motion.div variants={rowVariants} initial="hiddenRight" whileInView="visible" transition={springTransition} viewport={{ once: false, amount: 0.4 }} className="relative rounded-[40px] overflow-hidden border border-white/10"><img src={probImage} className="absolute inset-0 w-full h-full object-fill grayscale opacity-50" alt="The Problem" /></motion.div>
-                </div>
-            </section>
-            <section className="snap-start h-screen w-full flex items-center justify-center bg-[#050505] px-6 no-scrollbar">
-                <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 h-[65vh]">
-                    <motion.div variants={rowVariants} initial="hiddenLeft" whileInView="visible" transition={springTransition} viewport={{ once: false, amount: 0.4 }} className="relative rounded-[40px] overflow-hidden border border-indigo-500/30">
-                        <img src={solImage} className="absolute inset-0 w-full h-full object-fill" alt="The Solution" />
-                        <div className="absolute inset-0 bg-indigo-600/20 mix-blend-overlay" />
-                    </motion.div>
-                    <motion.div variants={rowVariants} initial="hiddenRight" whileInView="visible" transition={springTransition} viewport={{ once: false, amount: 0.4 }} className="bg-indigo-600/10 backdrop-blur-lg border border-indigo-500/20 p-10 rounded-[40px] flex flex-col justify-center transform-gpu">
-                        <Headphones className="text-indigo-400 mb-6" size={40} />
-                        <h3 className="text-3xl font-bold mb-4 uppercase">The Bridge</h3>
-                        <p className="text-gray-400 text-lg leading-relaxed mb-8">We use AI to convert visual complexity into spatial audio and narrated formulas.</p>
-                        <div className="flex gap-4">
-                            <span className="flex items-center gap-2 text-xs font-black bg-white/5 px-4 py-2 rounded-full"><Waves size={16} /> SONIC SYNC</span>
-                            <span className="flex items-center gap-2 text-xs font-black bg-white/5 px-4 py-2 rounded-full"><Sparkles size={16} /> AI NARRATOR</span>
+
+
+                    {/* RIGHT IMAGE */}
+
+                    <motion.div
+                        variants={rowVariants}
+                        initial="hiddenRight"
+                        whileInView="visible"
+                        transition={springTransition}
+                        className="relative rounded-[32px] overflow-hidden border border-[#222]"
+                    >
+
+                        <img
+                            src={probImage}
+                            className="absolute inset-0 w-full h-full object-cover grayscale opacity-40"
+                            alt="Problem Illustration"
+                        />
+
+                        {/* overlay gradient */}
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent" />
+
+                        {/* overlay text */}
+
+                        <div className="absolute bottom-10 left-10">
+
+                            <h3 className="text-xl font-[Playfair_Display] text-white mb-2">
+
+                                Learning should never depend on sight.
+
+                            </h3>
+
+                            <p className="text-sm text-[#a3a3a3] font-inter max-w-xs">
+
+                                Millions of students face barriers when education relies only
+                                on visual information.
+
+                            </p>
+
                         </div>
+
                     </motion.div>
+
                 </div>
+
             </section>
+
+
+            {/* SOLUTION SECTION */}
+
+            <section className="snap-start h-screen w-full flex items-center justify-center bg-[#050505] px-6">
+
+                <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-10 h-[60vh]">
+
+
+                    {/* IMAGE */}
+
+                    <motion.div
+                        variants={rowVariants}
+                        initial="hiddenLeft"
+                        whileInView="visible"
+                        transition={springTransition}
+                        className="relative rounded-[32px] overflow-hidden border border-[#14b8a6]/20"
+                    >
+
+                        <img
+                            src={solImage}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            alt="Solution Illustration"
+                        />
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent" />
+
+                        {/* overlay text */}
+
+                        <div className="absolute bottom-10 left-10">
+
+                            <h3 className="text-xl font-[Playfair_Display] text-white mb-2">
+
+                                AI transforms visuals into sound.
+
+                            </h3>
+
+                            <p className="text-sm text-[#cfcfcf] font-inter max-w-xs">
+
+                                Complex diagrams, charts, and equations become immersive
+                                audio experiences.
+
+                            </p>
+
+                        </div>
+
+                    </motion.div>
+
+
+                    {/* RIGHT CARD */}
+
+                    <motion.div
+                        variants={rowVariants}
+                        initial="hiddenRight"
+                        whileInView="visible"
+                        transition={springTransition}
+                        className="bg-[#0f0f0f] border border-[#14b8a6]/20 p-12 rounded-[32px] flex flex-col justify-center"
+                    >
+
+                        <Headphones className="text-[#14b8a6] mb-6" size={40} />
+
+                        <h3 className="text-xs font-black text-[#14b8a6] uppercase tracking-[0.35em] mb-4 font-nunito">
+
+                            The Bridge
+
+                        </h3>
+
+                        <h2 className="text-4xl md:text-5xl font-[Playfair_Display] font-semibold tracking-tight mb-8 text-white">
+
+                            AI-Synthesized Reality
+
+                        </h2>
+
+                        <p className="text-[#a3a3a3] text-lg font-inter font-light leading-relaxed mb-10">
+
+                            Our AI converts diagrams, charts, and mathematical expressions
+                            into spatial audio environments that students can explore.
+
+                        </p>
+
+                        <div className="flex gap-4 font-nunito">
+
+                            <span className="flex items-center gap-2 text-[10px] font-black bg-white/5 border border-white/10 px-4 py-2 rounded-lg uppercase tracking-widest">
+
+                                <Waves size={14} className="text-[#14b8a6]" />
+                                SONIC SYNC
+
+                            </span>
+
+                            <span className="flex items-center gap-2 text-[10px] font-black bg-[#14b8a6] text-black px-4 py-2 rounded-lg uppercase tracking-widest">
+
+                                <Sparkles size={14} />
+                                AI NARRATOR
+
+                            </span>
+
+                        </div>
+
+                    </motion.div>
+
+                </div>
+
+            </section>
+
         </>
     );
 }
+function ImpactSlides() {
+    const slides = [
+        { icon: <Users size={40} />, title: "10,000+ Learners", sub: "Breaking digital borders." },
+        { icon: <Library size={40} />, title: "500+ Courses", sub: "Fully narrated by AI." },
+        { icon: <Heart size={40} />, title: "98% Satisfaction", sub: "Accessibility at the core." }
+    ];
+
+    return (
+        <>
+            {slides.map((slide, index) => (
+                <section
+                    key={index}
+                    className="snap-start h-screen w-full flex flex-col items-center justify-center bg-[#050505] px-6 relative overflow-hidden"
+                >
+
+                    {/* BACKGROUND GLOW */}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(20,184,166,0.12),transparent_60%)] pointer-events-none" />
+
+                    {/* FLOATING BLUR ORBS */}
+                    <motion.div
+                        animate={{ y: [0, -40, 0] }}
+                        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute top-20 left-20 w-72 h-72 bg-[#14b8a6]/20 blur-[120px] rounded-full"
+                    />
+
+                    <motion.div
+                        animate={{ y: [0, 40, 0] }}
+                        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute bottom-20 right-20 w-72 h-72 bg-[#14b8a6]/20 blur-[120px] rounded-full"
+                    />
+
+                    {/* SNAP LINE */}
+                    <motion.div
+                        initial={{ width: 0 }}
+                        whileInView={{ width: "180px" }}
+                        viewport={{ once: false, amount: 0.6 }}
+                        transition={{ duration: 0.9 }}
+                        className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] bg-gradient-to-r from-transparent via-[#14b8a6] to-transparent"
+                    />
+
+                    {/* CONTENT */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: false, amount: 0.6 }}
+                        transition={{ duration: 0.8 }}
+                        className="text-center max-w-4xl relative z-10"
+                    >
+
+                        {/* ICON */}
+                        <motion.div
+                            animate={{
+                                scale: [1, 1.08, 1],
+                                filter: [
+                                    "drop-shadow(0 0 0px rgba(20,184,166,0))",
+                                    "drop-shadow(0 0 25px rgba(20,184,166,0.8))",
+                                    "drop-shadow(0 0 0px rgba(20,184,166,0))"
+                                ]
+                            }}
+                            transition={{
+                                duration: 3,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                            className="text-[#14b8a6] flex justify-center mb-8"
+                        >
+                            {slide.icon}
+                        </motion.div>
+
+                        {/* TITLE */}
+                        <h2 className="text-5xl md:text-7xl font-serif gradient-text-teal font-bold mb-6 tracking-tight drop-shadow-[0_5px_15px_rgba(20,184,166,0.35)]">
+                            {slide.title}
+                        </h2>
+
+                        {/* SUBTEXT */}
+                        <p className="text-[#737373] text-lg md:text-xl font-inter font-light uppercase tracking-[0.4em] drop-shadow-md">
+                            {slide.sub}
+                        </p>
+
+                        {/* BOTTOM LINE */}
+                        <motion.div
+                            initial={{ scaleX: 0 }}
+                            whileInView={{ scaleX: 1 }}
+                            viewport={{ once: false, amount: 0.6 }}
+                            transition={{ duration: 0.9 }}
+                            className="origin-center w-40 h-px bg-[#14b8a6]/60 mx-auto mt-12"
+                        />
+
+                    </motion.div>
+
+                </section>
+            ))}
+        </>
+    );
+}
+
+

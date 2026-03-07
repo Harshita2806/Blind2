@@ -23,7 +23,7 @@ const scaleIn = {
 
 export function ContactSection() {
     return (
-        <section id="contact" className="relative py-32 overflow-hidden">
+        <section id="contact" className="relative py-32 overflow-hidden bg-[#050505]">
             {/* Background Ambient Glows */}
             <div className="absolute inset-0 pointer-events-none">
                 {/* Tech Grid */}
@@ -31,9 +31,9 @@ export function ContactSection() {
                     className="absolute inset-0 opacity-[0.03]"
                     style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}
                 />
-                {/* Gradient Orbs */}
-                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-primary opacity-10 rounded-full blur-[150px]" />
-                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-800 opacity-10 rounded-full blur-[120px]" />
+                {/* Gradient Orbs - Updated to Stealth Teal */}
+                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#14b8a6] opacity-5 rounded-full blur-[150px]" />
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#0d9488] opacity-5 rounded-full blur-[120px]" />
             </div>
 
             <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -50,14 +50,14 @@ export function ContactSection() {
                             <motion.div
                                 initial={{ opacity: 0, x: -20 }}
                                 whileInView={{ opacity: 1, x: 0 }}
-                                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-primary/10 border border-brand-primary/30 text-brand-primary text-xs font-semibold uppercase tracking-widest mb-6"
+                                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#14b8a6]/10 border border-[#14b8a6]/30 text-[#14b8a6] text-[10px] font-black font-nunito uppercase tracking-widest mb-6"
                             >
                                 <Globe size={14} /> Get in Touch
                             </motion.div>
-                            <h2 className="text-4xl md:text-6xl font-bold font-welcome text-white mb-6 leading-tight">
-                                Let's <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-indigo-400">Connect.</span>
+                            <h2 className="text-4xl md:text-6xl font-bold font-lora text-white mb-6 leading-tight">
+                                Let's <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffffff] to-[#14b8a6]">Connect.</span>
                             </h2>
-                            <p className="text-gray-400 text-lg max-w-md leading-relaxed">
+                            <p className="text-[#888] text-lg max-w-md leading-relaxed font-nunito font-light">
                                 Have questions about AI implementation or partnerships? We're engineering the future of inclusive learning.
                             </p>
                         </div>
@@ -83,8 +83,8 @@ export function ContactSection() {
                                 <motion.a
                                     key={i}
                                     variants={scaleIn}
-                                    whileHover={{ y: -5, scale: 1.1, boxShadow: "0 10px 20px rgba(85, 70, 161, 0.3)" }}
-                                    className="w-12 h-12 rounded-xl bg-brand-card border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-brand-primary hover:border-brand-primary transition-all duration-300"
+                                    whileHover={{ y: -5, scale: 1.1, boxShadow: "0 10px 20px rgba(20, 184, 166, 0.2)" }}
+                                    className="w-12 h-12 rounded-xl bg-[#0a0a0a] border border-[#222] flex items-center justify-center text-[#555] hover:text-white hover:bg-[#14b8a6] hover:border-[#14b8a6] transition-all duration-300"
                                     href="#"
                                 >
                                     <Icon size={18} />
@@ -93,44 +93,43 @@ export function ContactSection() {
                         </div>
                     </motion.div>
 
-                    {/* Right Column: Glassmorphic Form with Animated Border */}
+                    {/* Right Column: Glassmorphic Form */}
                     <motion.div
                         variants={fadeInUp}
                         className="relative group"
                     >
-                        {/* Rotating Border Effect */}
+                        {/* Rotating Border Effect - Teal Update */}
                         <div className="absolute -inset-1 rounded-[48px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 overflow-hidden">
                             <div className="absolute inset-0 animate-rotate-gradient">
-                                <div className="absolute inset-0 bg-gradient-to-r from-brand-primary via-transparent to-indigo-400" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-[#14b8a6] via-transparent to-[#ffffff]" />
                             </div>
                         </div>
 
-                        <div className="relative bg-brand-card/80 backdrop-blur-xl rounded-[40px] p-8 md:p-12 shadow-2xl border border-white/10 overflow-hidden">
+                        <div className="relative bg-[#0a0a0a]/80 backdrop-blur-xl rounded-[40px] p-8 md:p-12 shadow-2xl border border-[#222] overflow-hidden">
                             {/* Decorative Top Glow */}
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-32 bg-brand-primary/10 rounded-full blur-3xl" />
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-32 bg-[#14b8a6]/5 rounded-full blur-3xl" />
 
-                            <form className="relative z-10 space-y-6">
+                            <form className="relative z-10 space-y-6 font-nunito">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <InputField label="Name" placeholder="John Doe" />
                                     <InputField label="Email" placeholder="john@example.com" type="email" />
                                 </div>
                                 <InputField label="Subject" placeholder="Institutional Inquiry" />
                                 <div>
-                                    <label className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 block mb-2 ml-1">Message</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-[#555] block mb-2 ml-1">Message</label>
                                     <textarea
                                         rows={4}
-                                        className="w-full bg-brand-input border border-white/5 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-all text-white placeholder:text-gray-600 text-sm resize-none"
+                                        className="w-full bg-[#111] border border-[#222] rounded-2xl px-5 py-4 focus:ring-1 focus:ring-[#14b8a6] outline-none transition-all text-white placeholder:text-[#444] text-sm resize-none"
                                         placeholder="Tell us about your project..."
                                     />
                                 </div>
 
-                                {/* Animated Button */}
+                                {/* Updated Button to Stealth Teal */}
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
-                                    className="relative w-full bg-brand-primary text-white py-4 rounded-xl font-bold uppercase tracking-wider text-sm overflow-hidden group/btn shadow-lg shadow-brand-primary/30"
+                                    className="relative w-full bg-gradient-to-r from-[#0d9488] to-[#14b8a6] text-white py-4 rounded-xl font-bold uppercase tracking-wider text-sm overflow-hidden group/btn shadow-lg shadow-[#14b8a6]/10"
                                 >
-                                    {/* Shine Effect */}
                                     <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-in-out" />
                                     <span className="relative flex items-center justify-center gap-2">
                                         Send Message
@@ -160,9 +159,9 @@ export function Footer() {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className="bg-brand-bg border-t border-white/5 pt-24 pb-10 relative overflow-hidden">
+        <footer className="bg-[#050505] border-t border-[#1a1a1a] pt-24 pb-10 relative overflow-hidden font-nunito">
             {/* Background Gradient */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-1/2 bg-brand-primary opacity-5 rounded-full blur-[120px]" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-1/2 bg-[#14b8a6] opacity-5 rounded-full blur-[120px]" />
 
             <div className="max-w-7xl mx-auto px-6 relative z-10">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
@@ -171,23 +170,23 @@ export function Footer() {
                     <div className="md:col-span-5 space-y-6">
                         <motion.a
                             href="/"
-                            className="flex items-center gap-2 text-white font-bold text-2xl tracking-tight"
+                            className="flex items-center gap-2 text-white font-lora font-bold text-2xl tracking-tight"
                             whileHover={{ scale: 1.02 }}
                         >
-                            <div className="p-1.5 rounded-lg bg-brand-primary">
-                                <BookOpen size={20} className="text-white" />
+                            <div className="p-1.5 rounded-lg bg-gradient-to-br from-[#14b8a6] to-[#0d9488]">
+                                <BookOpen size={20} className="text-black" />
                             </div>
                             <span>AccessLearn</span>
                         </motion.a>
-                        <p className="text-gray-500 max-w-sm text-sm leading-relaxed">
+                        <p className="text-[#666] max-w-sm text-sm leading-relaxed font-light">
                             Redefining the boundaries of education through neural accessibility. We make knowledge audible and universally available.
                         </p>
-                        <div className="flex items-center gap-3 py-2 px-4 rounded-full bg-emerald-500/5 border border-emerald-500/10 w-fit">
+                        <div className="flex items-center gap-3 py-2 px-4 rounded-full bg-[#14b8a6]/5 border border-[#14b8a6]/10 w-fit">
                             <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#14b8a6] opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#14b8a6]"></span>
                             </span>
-                            <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">Core Systems Online</span>
+                            <span className="text-[10px] font-black text-[#14b8a6] uppercase tracking-wider">Core Systems Online</span>
                         </div>
                     </div>
 
@@ -200,15 +199,15 @@ export function Footer() {
                 </div>
 
                 {/* Bottom Bar */}
-                <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="pt-8 border-t border-[#1a1a1a] flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-6">
-                        <p className="text-gray-600 text-xs font-medium">
+                        <p className="text-[#444] text-xs font-medium">
                             © {currentYear} AccessLearn. All rights reserved.
                         </p>
                     </div>
-                    <div className="flex items-center gap-4 text-gray-500">
-                        <ShieldCheck size={16} className="text-brand-primary" />
-                        <span className="text-xs font-medium uppercase tracking-wider">End-to-End Encryption Active</span>
+                    <div className="flex items-center gap-4 text-[#555]">
+                        <ShieldCheck size={16} className="text-[#14b8a6]" />
+                        <span className="text-[10px] font-black uppercase tracking-wider">End-to-End Encryption Active</span>
                     </div>
                 </div>
             </div>
@@ -222,15 +221,15 @@ function ContactLink({ icon, label, value, href }) {
     return (
         <motion.a
             href={href}
-            className="flex items-center gap-5 group"
+            className="flex items-center gap-5 group font-nunito"
             whileHover={{ x: 5 }}
         >
-            <div className="w-14 h-14 rounded-2xl bg-brand-card border border-white/5 flex items-center justify-center text-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-all duration-300 group-hover:shadow-lg group-hover:shadow-brand-primary/30">
+            <div className="w-14 h-14 rounded-2xl bg-[#0a0a0a] border border-[#222] flex items-center justify-center text-[#14b8a6] group-hover:bg-[#14b8a6] group-hover:text-black transition-all duration-300 group-hover:shadow-lg group-hover:shadow-[#14b8a6]/20">
                 {icon}
             </div>
             <div>
-                <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-0.5">{label}</p>
-                <p className="text-white font-medium group-hover:text-brand-primary transition-colors">{value}</p>
+                <p className="text-[#555] text-[10px] font-black uppercase tracking-wider mb-0.5">{label}</p>
+                <p className="text-[#a3a3a3] font-medium group-hover:text-[#14b8a6] transition-colors">{value}</p>
             </div>
         </motion.a>
     );
@@ -239,7 +238,7 @@ function ContactLink({ icon, label, value, href }) {
 function FooterGroup({ title, links }) {
     return (
         <div className="space-y-6">
-            <h4 className="text-white font-bold text-xs uppercase tracking-wider">{title}</h4>
+            <h4 className="text-white font-black text-[11px] uppercase tracking-widest">{title}</h4>
             <ul className="space-y-4">
                 {links.map((link, i) => (
                     <motion.li
@@ -249,9 +248,9 @@ function FooterGroup({ title, links }) {
                         transition={{ delay: i * 0.05, duration: 0.3 }}
                         viewport={{ once: true }}
                     >
-                        <a href="#" className="text-gray-500 hover:text-white text-sm transition-colors duration-300 relative group">
+                        <a href="#" className="text-[#666] hover:text-[#14b8a6] text-sm transition-colors duration-300 relative group">
                             {link}
-                            <span className="absolute bottom-0 left-0 w-0 h-px bg-brand-primary group-hover:w-full transition-all duration-300" />
+                            <span className="absolute bottom-0 left-0 w-0 h-px bg-[#14b8a6] group-hover:w-full transition-all duration-300" />
                         </a>
                     </motion.li>
                 ))}
@@ -262,14 +261,14 @@ function FooterGroup({ title, links }) {
 
 function InputField({ label, placeholder, type = "text" }) {
     return (
-        <div className="space-y-2">
-            <label className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 ml-1">
+        <div className="space-y-2 font-nunito">
+            <label className="text-[10px] font-black uppercase tracking-widest text-[#555] ml-1">
                 {label}
             </label>
             <input
                 type={type}
                 placeholder={placeholder}
-                className="w-full bg-brand-input border border-white/5 rounded-xl px-5 py-3.5 focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-all text-white placeholder:text-gray-600 text-sm"
+                className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-3.5 focus:ring-1 focus:ring-[#14b8a6] outline-none transition-all text-white placeholder:text-[#444] text-sm"
             />
         </div>
     );

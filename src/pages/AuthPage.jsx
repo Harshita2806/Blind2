@@ -64,7 +64,7 @@ export default function AuthPage({ defaultMode }) {
     };
 
     return (
-        <div className="h-screen w-screen bg-brand-bg font-main text-white overflow-hidden flex items-center justify-center">
+        <div className="h-screen w-screen bg-[#050505] font-['Inter'] text-white overflow-hidden flex items-center justify-center">
             <div className="w-full h-full flex flex-col lg:flex-row overflow-hidden relative">
                 <AnimatePresence mode="wait" initial={false}>
                     <motion.div
@@ -78,9 +78,10 @@ export default function AuthPage({ defaultMode }) {
                         {/* FORM SECTION */}
                         <div className="w-full lg:w-1/2 h-full flex flex-col items-center justify-center p-6 sm:p-10 lg:p-16 overflow-y-auto no-scrollbar">
                             <div className="w-full max-w-100">
-                                <div className="flex items-center gap-2 text-brand-primary font-bold text-xl mb-10">
-                                    <BookOpen size={24} />
-                                    <span>AccessLearn</span>
+                                <div className="flex items-center gap-2 text-[#14b8a6] font-bold text-xl mb-10 group cursor-pointer">
+                                    <BookOpen size={24} className="group-hover:drop-shadow-[0_0_8px_#14b8a6]" />
+                                    {/* Switched to Plus Jakarta Sans */}
+                                    <span className="tracking-tighter font-['Plus_Jakarta_Sans'] uppercase text-lg">AccessLearn</span>
                                 </div>
 
                                 {/* Error message */}
@@ -101,8 +102,10 @@ export default function AuthPage({ defaultMode }) {
                                     {isLogin ? (
                                         <div className="space-y-6">
                                             <div>
-                                                <h1 className="text-3xl font-bold font-sans tracking-normal mb-2 text-white">Welcome Back</h1>
-                                                <p className="font-sans text-gray-300 text-base tracking-wide">Log in to continue your learning journey</p>
+                                                <h1 className="text-4xl font-extrabold font-['Plus_Jakarta_Sans'] tracking-wider  mb-2 text-white drop-shadow-[0_4px_12px_rgba(20,184,166,0.2)]">
+                                                    Welcome Back
+                                                </h1>
+                                       <p className="font-sans text-gray-400 text-base tracking-wide">Log in to continue your learning journey</p>
                                             </div>
                                             <div className="space-y-5">
                                                 <InputBlock label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
@@ -124,8 +127,12 @@ export default function AuthPage({ defaultMode }) {
                                     ) : (
                                         <div className="space-y-6">
                                             <div>
-                                                <h1 className="text-4xl font-bold font-sans tracking-wide mb-2 text-white">Create Account</h1>
-                                                <p className="text-gray-400 text-base">Join our accessible learning platform</p>
+                                                    <h1 className="text-4xl tracking-wider font-extrabold font-['Plus_Jakarta_Sans'] mb-2 text-white drop-shadow-[0_4px_12px_rgba(20,184,166,0.2)]">
+                                                        Create Account
+                                                    </h1>
+                                                    <p className="text-gray-400 text-base font-light">
+                                                        Join our accessible learning platform
+                                                    </p>
                                             </div>
                                             <div className="space-y-4">
                                                 <InputBlock label="Full Name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your full name" required />

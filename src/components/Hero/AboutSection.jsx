@@ -3,177 +3,189 @@ import { motion } from "framer-motion";
 import { Sparkles, Brain, Globe, Users, Info } from "lucide-react";
 
 export default function AboutSection() {
-    return (
-        <section className="relative w-full min-h-screen  flex items-center justify-center py-16 px-6 overflow-hidden">
 
-            {/* --- BACKGROUND ELEMENTS --- */}
+    const cardHover = {
+        whileHover: {
+            y: -10,
+            scale: 1.03,
+            transition: { duration: 0.35 }
+        }
+    };
+
+    return (
+        /* Global font set to Inter */
+        <section className="relative w-full min-h-screen flex items-center justify-center py-16 px-6 overflow-hidden bg-[#050505] font-['Inter']">
+
+            {/* BACKGROUND */}
             <div className="absolute inset-0 pointer-events-none">
+
+                <div
+                    className="absolute inset-0 opacity-[0.03]"
+                    style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}
+                />
+
+                {/* grid */}
                 <div
                     className="absolute inset-0 opacity-[0.02]"
-                    style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }}
+                    style={{
+                        backgroundImage:
+                            "linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg,#ffffff 1px,transparent 1px)",
+                        backgroundSize: "30px 30px"
+                    }}
                 />
+
+                {/* glow */}
                 <motion.div
-                    animate={{ opacity: [0.08, 0.15, 0.08] }}
+                    animate={{ opacity: [0.04, 0.1, 0.04], scale: [1, 1.1, 1] }}
                     transition={{ duration: 6, repeat: Infinity }}
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-brand-primary opacity-10 rounded-full blur-[120px]"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[450px] bg-[#14b8a6] rounded-full blur-[160px]"
                 />
             </div>
 
-            {/* --- MAIN COMPACT CONTAINER --- */}
+
+            {/* MAIN CONTAINER */}
             <motion.div
-                initial={{ opacity: 0, scale: 0.98 }}
+                initial={{ opacity: 0, scale: 0.96 }}
                 whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1.5 }}
+                transition={{ duration: 1.2 }}
                 viewport={{ once: true }}
-                className="max-w-6xl mx-auto relative z-20 w-full border border-white/30 rounded-[40px] p-6 md:p-10 backdrop-blur-xl bg-brand-bg/50 shadow-2xl flex flex-col justify-center overflow-hidden"
+                className="max-w-6xl mx-auto relative z-20 w-full border border-[#696969] rounded-[40px] p-6 md:p-10 backdrop-blur-4xl bg-[#0a0a0a]/40 shadow-2xl overflow-hidden"
             >
-                {/* 2x2 HUD Grid Layout */}
-                <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-y-8 md:gap-y-4 relative">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-y-12 md:gap-y-8 relative">
 
                     {/* TOP LEFT */}
                     <motion.div
                         initial={{ opacity: 0, x: -80, y: -80 }}
                         whileInView={{ opacity: 1, x: 0, y: 0 }}
-                        transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+                        transition={{ duration: 1 }}
                         viewport={{ once: true }}
-                        whileHover={{ y: -6 }}
-                        className="flex flex-col justify-start text-left space-y-2"
+                        {...cardHover}
+                        className="flex flex-col space-y-3 group"
                     >
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-gray-400 text-[9px] font-semibold uppercase tracking-wider w-fit">
-                            <Info size={10} /> About Us
+                        {/* Heading font: Plus Jakarta Sans */}
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#333] bg-[#111] text-[#888] text-[9px] font-['Plus_Jakarta_Sans'] font-bold uppercase tracking-[0.2em] w-fit group-hover:border-[#14b8a6] transition">
+                            <Info size={10} className="text-[#14b8a6]" /> About Us
                         </div>
 
-                        {/* POPPING HEADING */}
-                        <motion.h3
-                            initial={{ scale: 0.6, opacity: 0 }}
-                            whileInView={{ scale: 1, opacity: 1 }}
-                            transition={{ type: "spring", stiffness: 180, damping: 12, delay: 0.3 }}
-                            className="text-2xl md:text-3xl font-bold text-white uppercase tracking-tight font-welcome"
-                        >
-                            About Us
-                        </motion.h3>
+                        <h3 className="text-3xl md:text-4xl font-extrabold text-white uppercase tracking-tight font-['Plus_Jakarta_Sans'] group-hover:text-[#14b8a6] transition">
+                            Our Mission
+                        </h3>
 
-                        <p className="text-gray-500 text-xs md:text-sm leading-relaxed max-w-[260px]">
-                            AccessLearn is a collective of AI engineers and accessibility advocates dedicated to rewriting the rules of digital education for the visually impaired.
+                        <p className="text-[#a4a2a2] text-lg font-light leading-7 max-w-[280px]">
+                            AccessLearn is a collective of AI engineers dedicated to rewriting the rules of digital education for the visually impaired.
                         </p>
                     </motion.div>
+
 
                     {/* TOP RIGHT */}
                     <motion.div
                         initial={{ opacity: 0, x: 80, y: -80 }}
                         whileInView={{ opacity: 1, x: 0, y: 0 }}
-                        transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
+                        transition={{ duration: 1 }}
                         viewport={{ once: true }}
-                        whileHover={{ y: -6 }}
-                        className="flex flex-col justify-start items-end text-right space-y-2"
+                        {...cardHover}
+                        className="flex flex-col items-end text-right space-y-3"
                     >
-                        <motion.h3
-                            initial={{ scale: 0.6, opacity: 0 }}
-                            whileInView={{ scale: 1, opacity: 1 }}
-                            transition={{ type: "spring", stiffness: 200, damping: 12, delay: 0.5 }}
-                            className="text-3xl md:text-5xl font-bold font-welcome text-white tracking-tight leading-none"
-                        >
-                            Accessible <br /> <motion.span
-                                animate={{
-                                    textShadow: [
-                                        "0px 0px 15px rgba(99,102,241,2)"
-                                    ]
-                                }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className="text-indigo-300 text-xl md:text-3xl"
-                            >
+                        <h3 className="text-2xl md:text-4xl font-extrabold uppercase text-white font-['Plus_Jakarta_Sans']">
+                            Accessible <br />
+                            <span className="text-[#14b8a6] text-xl md:text-2xl font-black drop-shadow-[0_0_12px_rgba(20,184,166,0.7)]">
                                 by Design.
-                            </motion.span>
-                        </motion.h3>
+                            </span>
+                        </h3>
 
-                        <p className="text-gray-400 text-sm leading-snug max-w-[280px]">
-                            Visual complexity should never be a barrier. We engineer a world where knowledge is universally accessible.
+                        <p className="text-[#a4a2a2] text-lg font-light leading-7 max-w-[280px]">
+                            Visual complexity should never be a barrier. We engineer a world where knowledge is heard and felt.
                         </p>
                     </motion.div>
+
 
                     {/* BOTTOM LEFT */}
                     <motion.div
                         initial={{ opacity: 0, x: -80, y: 80 }}
                         whileInView={{ opacity: 1, x: 0, y: 0 }}
-                        transition={{ duration: 1, ease: "easeOut", delay: 0.6 }}
+                        transition={{ duration: 1 }}
                         viewport={{ once: true }}
-                        whileHover={{ y: -6 }}
-                        className="flex flex-col justify-start mt-15 space-y-2"
+                        {...cardHover}
+                        className="flex flex-col justify-end mt-8 md:mt-16 space-y-3"
                     >
-                        <motion.h3
-                            initial={{ scale: 0.6, opacity: 0 }}
-                            whileInView={{ scale: 1, opacity: 1 }}
-                            transition={{ type: "spring", stiffness: 200, damping: 12, delay: 0.7 }}
-                            className="text-3xl md:text-5xl font-bold font-welcome text-white tracking-tight leading-none"
-                        >
-                            Inclusive <motion.span
-                                animate={{
-                                    textShadow: [
-                                        "0px 0px 15px rgba(99,102,241,2)"
-                                    ]
-                                }}
-                                transition={{ duration: 2.2, repeat: Infinity }}
-                                className="text-indigo-300 text-xl md:text-3xl"
-                            >
+                        <h3 className="text-2xl md:text-4xl font-extrabold text-white font-['Plus_Jakarta_Sans']">
+                            Inclusive <br />
+                            <span className="text-[#14b8a6] text-xl md:text-2xl font-black drop-shadow-[0_0_12px_rgba(20,184,166,0.7)]">
                                 by Default.
-                            </motion.span>
-                        </motion.h3>
+                            </span>
+                        </h3>
 
-                        <p className="text-gray-400 text-sm leading-snug max-w-[280px]">
+                        <p className="text-[#a4a2a2] text-lg font-light leading-7 max-w-[280px]">
                             Rebuilding education around empathy and AI to ensure every student learns without limits.
                         </p>
                     </motion.div>
+
 
                     {/* BOTTOM RIGHT */}
                     <motion.div
                         initial={{ opacity: 0, x: 80, y: 80 }}
                         whileInView={{ opacity: 1, x: 0, y: 0 }}
-                        transition={{ duration: 1, ease: "easeOut", delay: 0.8 }}
+                        transition={{ duration: 1 }}
                         viewport={{ once: true }}
-                        whileHover={{ y: -6 }}
-                        className="flex flex-col justify-end items-end space-y-3"
+                        {...cardHover}
+                        className="flex flex-col justify-end items-end space-y-5"
                     >
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 text-[12px] font-semibold uppercase tracking-wider w-fit ml-auto">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#14b8a6]/30 bg-[#14b8a6]/10 text-[#14b8a6] text-[11px] font-['Plus_Jakarta_Sans'] font-bold uppercase tracking-widest">
                             <Sparkles size={10} /> The Vision
                         </div>
 
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex gap-3">
+
                             <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                className="px-4 py-2 rounded-xl bg-white/[0.03] border border-white/5 flex items-center gap-3 hover:border-brand-primary/30 transition-colors"
+                                whileHover={{ scale: 1.1 }}
+                                className="px-5 py-2.5 rounded-xl bg-white/[0.02] border border-[#222] flex items-center gap-3 hover:border-[#14b8a6]"
                             >
-                                <Globe size={16} className="text-brand-primary" />
-                                <span className="text-[15px] font-semibold text-white/70 uppercase tracking-wider">Global Edge</span>
+                                <Globe size={16} className="text-[#14b8a6]" />
+                                <span className="text-[13px] font-['Plus_Jakarta_Sans'] font-bold text-[#a3a3a3] uppercase">Global Edge</span>
                             </motion.div>
 
                             <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                className="px-4 py-2 rounded-xl bg-white/[0.03] border border-white/5 flex items-center gap-3 hover:border-brand-primary/30 transition-colors"
+                                whileHover={{ scale: 1.1 }}
+                                className="px-5 py-2.5 rounded-xl bg-white/[0.02] border border-[#222] flex items-center gap-3 hover:border-[#14b8a6]"
                             >
-                                <Users size={16} className="text-indigo-400" />
-                                <span className="text-[15px] font-semibold text-white/70 uppercase tracking-wider">12k+ Users</span>
+                                <Users size={16} className="text-[#14b8a6]" />
+                                <span className="text-[13px] font-['Plus_Jakarta_Sans'] font-bold text-[#a3a3a3] uppercase">12k+ Users</span>
                             </motion.div>
+
                         </div>
                     </motion.div>
 
+
                     {/* CENTER HUB */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center">
-                        <div className="absolute h-[50vh] w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" />
-                        <div className="absolute w-[60vw] h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center justify-center pointer-events-none">
+
+                        {/* CROSSHAIR LINES */}
+                        <div className="absolute h-[60vh] w-[1px] bg-gradient-to-b from-transparent via-[#222] to-transparent" />
+                        <div className="absolute w-[60vw] h-[1px] bg-gradient-to-r from-transparent via-[#222] to-transparent" />
 
                         <motion.div
-                            animate={{ scale: [1, 1.08, 1], rotate: 360 }}
-                            transition={{ rotate: { duration: 20, repeat: Infinity, ease: "linear" }, scale: { duration: 3, repeat: Infinity } }}
-                            className="relative bg-brand-bg border border-brand-primary/50 p-6 rounded-full shadow-[0_0_60px_rgba(85,70,161,0.25)]"
+                            animate={{ rotate: 360, scale: [1, 1.08, 1] }}
+                            transition={{
+                                rotate: { duration: 35, repeat: Infinity, ease: "linear" },
+                                scale: { duration: 4, repeat: Infinity }
+                            }}
+                            className="relative bg-[#050505] border border-[#14b8a6] p-7 rounded-full shadow-[0_0_60px_rgba(20,184,166,0.25)]"
                         >
-                            <Brain size={28} className="text-brand-primary" />
-                            <div className="absolute inset-0 rounded-full border-2 border-brand-primary/20 animate-ping" style={{ animationDuration: '3s' }} />
+                            <Brain size={24} className="text-[#14b8a6]" />
+
+                            <div
+                                className="absolute inset-0 rounded-full border border-[#14b8a6] animate-ping"
+                                style={{ animationDuration: "4s" }}
+                            />
                         </motion.div>
                     </div>
+
                 </div>
 
-                <div className="absolute top-4 left-4 w-6 h-6 border-t border-l border-white/30 rounded-tl-2xl" />
-                <div className="absolute bottom-4 right-4 w-6 h-6 border-b border-r border-white/30 rounded-br-2xl" />
+                {/* CORNER ACCENTS */}
+                <div className="absolute top-6 left-6 w-8 h-8 border-t border-l border-[#4a4949] rounded-tl-2xl" />
+                <div className="absolute bottom-6 right-6 w-8 h-8 border-b border-r border-[#4a4949] rounded-br-2xl" />
 
             </motion.div>
         </section>
