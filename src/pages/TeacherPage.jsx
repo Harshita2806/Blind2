@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Menu, X, LogOut, Upload, Music, BarChart3, BookOpen,
     FileText, Zap, Clock, Users, Volume2, Sparkles, CheckCircle,
-    TrendingUp, Award, Eye, Star
+    TrendingUp, Award, Eye, Star, Trash2
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -120,6 +120,19 @@ export default function TeacherPage() {
         }
     };
 
+    const handleDelete = async (materialId, title) => {
+        if (!window.confirm(`Are you sure you want to delete "${title}"?\n\nThis will permanently remove the PDF, audio files, and all associated data.`)) return;
+        try {
+            await materialsAPI.delete(materialId);
+            setUploadMessage(`"${title}" deleted successfully.`);
+            setUploadStatus("success");
+            fetchMaterials();
+        } catch (err) {
+            setUploadMessage(err.message || "Delete failed.");
+            setUploadStatus("error");
+        }
+    };
+
     const handleLogout = () => { logout(); navigate("/auth", { replace: true }); };
     const closeAndNavigate = (section) => { setActiveSection(section); setSidebarOpen(false); };
 
@@ -190,6 +203,7 @@ export default function TeacherPage() {
                                 handleGenerateAudio={handleGenerateAudio}
                                 handleGenerateQuiz={handleGenerateQuiz}
                                 handlePublish={handlePublish}
+                                handleDelete={handleDelete}
                                 uploadStatus={uploadStatus}
                                 uploadMessage={uploadMessage}
                                 SUBJECTS={SUBJECTS}
@@ -263,7 +277,7 @@ export default function TeacherPage() {
 // ─── Teacher Dashboard Section ───────────────────────────────────────────────
 function TeacherDashboardSection({
     materials, analytics, loading, uploadForm, setUploadForm, selectedFile,
-    handleFileSelect, handleUpload, handleGenerateAudio, handleGenerateQuiz, handlePublish, uploadStatus,
+    handleFileSelect, handleUpload, handleGenerateAudio, handleGenerateQuiz, handlePublish, handleDelete, uploadStatus,
     uploadMessage, SUBJECTS, GRADES
 }) {
     const published = materials.filter(m => m.status === "published");
@@ -437,6 +451,14 @@ function TeacherDashboardSection({
                                             <CheckCircle size={14} /> Publish
                                         </button>
                                     )}
+                                    {/* Delete */}
+                                    <button
+                                        onClick={() => handleDelete(material._id, material.title)}
+                                        className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all"
+                                        title="Delete material"
+                                    >
+                                        <Trash2 size={14} /> Delete
+                                    </button>
                                 </div>
                             </div>
                         </div>
