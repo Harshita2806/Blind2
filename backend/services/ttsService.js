@@ -15,11 +15,11 @@ const http = require('http');
 const { execFile, spawn } = require('child_process');
 const os = require('os');
 
-// ─── Ensure audio directory exists ───────────────────────────────────────────
+//  Ensure audio directory exists 
 const AUDIO_DIR = path.join(__dirname, '..', 'uploads', 'audio');
 if (!fs.existsSync(AUDIO_DIR)) fs.mkdirSync(AUDIO_DIR, { recursive: true });
 
-// ─── Download file from URL ───────────────────────────────────────────────────
+//  Download file from URL 
 function downloadFile(url) {
     return new Promise((resolve, reject) => {
         const protocol = url.startsWith('https') ? https : http;
@@ -32,7 +32,7 @@ function downloadFile(url) {
     });
 }
 
-// ─── Extract raw text + page map from PDF ────────────────────────────────────
+//  Extract raw text + page map from PDF 
 async function extractTextFromPDF(pdfPathOrUrl) {
     const pdfParse = require('pdf-parse');
     if (typeof pdfParse !== 'function') {
@@ -59,7 +59,7 @@ async function extractTextFromPDF(pdfPathOrUrl) {
     return { fullText: data.text || '', numPages: data.numpages || 0 };
 }
 
-// ─── Chapter detection from raw text ─────────────────────────────────────────
+// ─── Chapter detection from raw text 
 function detectChapters(fullText) {
     const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
 
@@ -183,37 +183,60 @@ async function googleTTS(text) {
     return response.audioContent;
 }
 
-// ─── TTS: msedge-tts (Microsoft Edge voices, proper Node.js package) ───────────────
-async function edgeTTS(text, outputPath) {
-    const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
-    const tts = new MsEdgeTTS();
-    await tts.setMetadata('en-IN-NeerjaNeural', OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3, {});
+// ─── TTS: gTTS (Google Text-to-Speech via Python, free, needs internet) ─────────
+function gttsTTS(text, outputPath) {
+    return new Promise((resolve, reject) => {
+        // Escape double quotes in text to avoid breaking the Python string
+        const safeText = text.substring(0, 8000).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ');
+        const pyScript = [
+            'from gtts import gTTS',
+            `tts = gTTS(text="""${safeText}""", lang='en', slow=False)`,
+            `tts.save(r"${outputPath.replace(/\\/g, '/')}")`,
+        ].join('\n');
 
-    // toFile writes the audio to a directory and names it audio.mp3
-    const tmpDir = outputPath + '_tmp';
-    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-
-    try {
-        await tts.toFile(tmpDir, text.substring(0, 6000));
-        tts.close();
-
-        // Move the generated audio.mp3 to the expected outputPath
-        const generatedFile = path.join(tmpDir, 'audio.mp3');
-        if (!fs.existsSync(generatedFile) || fs.statSync(generatedFile).size < 500) {
-            throw new Error('msedge-tts produced empty or missing file');
-        }
-        fs.renameSync(generatedFile, outputPath);
-    } finally {
-        // Clean up temp dir
-        try { fs.rmdirSync(tmpDir); } catch (_) { }
-    }
-
-    if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size < 500) {
-        throw new Error('msedge-tts output file is too small or missing');
-    }
+        execFile('python', ['-c', pyScript], { timeout: 60000 }, (err, stdout, stderr) => {
+            if (err) return reject(new Error(`gTTS failed: ${stderr || err.message}`));
+            if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size < 500) {
+                return reject(new Error('gTTS produced empty or missing file'));
+            }
+            resolve();
+        });
+    });
 }
 
-// ─── SAPI helper: synthesize ONE chunk to a WAV file ──────────────────────────
+// ─── TTS: pyttsx3 (offline Python TTS, uses Windows SAPI under the hood) ────────
+function pyttsx3TTS(text, outputPath) {
+    if (os.platform() !== 'win32') return Promise.reject(new Error('pyttsx3 Windows-only'));
+    return new Promise((resolve, reject) => {
+        const safeText = text.substring(0, 8000).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ');
+        // pyttsx3 saves as WAV, so save to a temp WAV then rename to mp3 path
+        const wavPath = outputPath.replace(/\.mp3$/i, '.wav');
+        const pyScript = [
+            'import pyttsx3',
+            'engine = pyttsx3.init()',
+            'engine.setProperty(\'rate\', 150)',
+            'engine.setProperty(\'volume\', 1.0)',
+            `engine.save_to_file("""${safeText}""", r"${wavPath.replace(/\\/g, '/')}")`,
+            'engine.runAndWait()',
+        ].join('\n');
+
+        execFile('python', ['-c', pyScript], { timeout: 120000 }, (err, stdout, stderr) => {
+            if (err) return reject(new Error(`pyttsx3 failed: ${stderr || err.message}`));
+            if (!fs.existsSync(wavPath) || fs.statSync(wavPath).size < 500) {
+                return reject(new Error('pyttsx3 produced empty or missing WAV'));
+            }
+            // Rename WAV → MP3 path (audio players handle WAV fine despite .mp3 ext)
+            try {
+                fs.renameSync(wavPath, outputPath);
+                resolve();
+            } catch (e) {
+                reject(new Error('pyttsx3: could not rename output file'));
+            }
+        });
+    });
+}
+
+// ─── LEGACY SAPI helper: synthesize ONE chunk to a WAV file ──────────────────────────
 function sapiChunk(text, wavPath) {
     const tempTxt = path.join(os.tmpdir(), `sapi_in_${Date.now()}_${Math.random().toString(36).slice(2)}.txt`);
     const tempPs1 = path.join(os.tmpdir(), `sapi_${Date.now()}_${Math.random().toString(36).slice(2)}.ps1`);
@@ -387,7 +410,7 @@ async function generateAudioForText(text, outputPath) {
         .replace(/\s+/g, ' ')
         .trim();
 
-    // 1. Try Google TTS
+    // 1. Try Google Cloud TTS (best quality, needs API key)
     try {
         const buf = await googleTTS(cleanText);
         fs.writeFileSync(outputPath, buf);
@@ -397,25 +420,25 @@ async function generateAudioForText(text, outputPath) {
         console.log('ℹ️  Google TTS skipped:', e.message);
     }
 
-    // 2. Try Edge TTS (Microsoft, free, requires Internet)
+    // 2. Try gTTS – free Google TTS via Python (needs internet, no API key)
     try {
-        await edgeTTS(cleanText, outputPath);
-        console.log('✅ Edge TTS used');
-        return 'edge';
+        await gttsTTS(cleanText, outputPath);
+        console.log('✅ gTTS (Python Google TTS) used');
+        return 'gtts';
     } catch (e) {
-        console.warn('⚠️  Edge TTS failed:', String(e));
+        console.warn('⚠️  gTTS failed:', e.message);
     }
 
-    // 3. Try Windows SAPI via PowerShell (offline)
+    // 3. Try pyttsx3 – offline Python TTS (Windows SAPI via Python, no internet needed)
     try {
-        await windowsSAPITTS(cleanText, outputPath);
+        await pyttsx3TTS(cleanText, outputPath);
         if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
-            console.log('✅ Windows SAPI TTS used');
-            return 'sapi';
+            console.log('✅ pyttsx3 (offline Python TTS) used');
+            return 'pyttsx3';
         }
-        throw new Error('SAPI output too small');
+        throw new Error('pyttsx3 output too small');
     } catch (e) {
-        console.warn('⚠️  Windows SAPI TTS failed:', e.message);
+        console.warn('⚠️  pyttsx3 TTS failed:', e.message);
     }
 
     // 4. Last resort: silent placeholder

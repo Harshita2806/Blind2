@@ -142,7 +142,7 @@ function Header() {
                     <div className="p-1 rounded-lg bg-gradient-to-br from-[#14b8a6] to-[#0d9488]">
                         <BookOpen size={20} className="text-black" />
                     </div>
-                    <span>AccessLearn</span>
+                    <span>AudioBook</span>
                 </Link>
 
                 <nav className="hidden md:flex items-center gap-8">

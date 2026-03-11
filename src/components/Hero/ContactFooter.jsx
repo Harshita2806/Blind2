@@ -176,7 +176,7 @@ export function Footer() {
                             <div className="p-1.5 rounded-lg bg-gradient-to-br from-[#14b8a6] to-[#0d9488]">
                                 <BookOpen size={20} className="text-black" />
                             </div>
-                            <span>AccessLearn</span>
+                            <span>AudioBook</span>
                         </motion.a>
                         <p className="text-[#666] max-w-sm text-sm leading-relaxed font-light">
                             Redefining the boundaries of education through neural accessibility. We make knowledge audible and universally available.
