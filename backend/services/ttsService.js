@@ -14,6 +14,7 @@ const https = require('https');
 const http = require('http');
 const { execFile, spawn } = require('child_process');
 const os = require('os');
+const imageDescriptionService = require('./imageDescriptionService');
 
 // ─── Ensure audio directory exists ───────────────────────────────────────────
 const AUDIO_DIR = path.join(__dirname, '..', 'uploads', 'audio');
@@ -168,6 +169,70 @@ function mathToSpeech(text) {
         .replace(/≥/g, 'greater than or equal to');
 }
 
+function splitTextIntoChunks(text, maxLen = 4500) {
+    const words = text.split(/\s+/).filter(Boolean);
+    const chunks = [];
+    let current = '';
+
+    for (const word of words) {
+        if (!current) {
+            current = word;
+            continue;
+        }
+        if ((current.length + 1 + word.length) > maxLen) {
+            chunks.push(current.trim());
+            current = word;
+        } else {
+            current += ` ${word}`;
+        }
+    }
+    if (current) chunks.push(current.trim());
+    return chunks;
+}
+
+function skipID3v2Tag(buffer) {
+    if (buffer.length < 10 || buffer.toString('utf8', 0, 3) !== 'ID3') return 0;
+    const size = ((buffer[6] & 0x7f) << 21)
+        | ((buffer[7] & 0x7f) << 14)
+        | ((buffer[8] & 0x7f) << 7)
+        | (buffer[9] & 0x7f);
+    return 10 + size;
+}
+
+function concatenateMp3Files(mp3Paths, outPath) {
+    const outStream = fs.createWriteStream(outPath);
+    try {
+        for (let i = 0; i < mp3Paths.length; i++) {
+            const buf = fs.readFileSync(mp3Paths[i]);
+            const start = (i === 0) ? 0 : skipID3v2Tag(buf);
+            outStream.write(buf.slice(start));
+        }
+    } finally {
+        outStream.close();
+    }
+}
+
+async function generateChunkedAudioWithGoogle(chunks, outputPath, tmpDir) {
+    const chunkFiles = [];
+    for (let i = 0; i < chunks.length; i++) {
+        const chunkPath = path.join(tmpDir, `google_chunk_${i}.mp3`);
+        const buf = await googleTTS(chunks[i]);
+        fs.writeFileSync(chunkPath, buf);
+        chunkFiles.push(chunkPath);
+    }
+    concatenateMp3Files(chunkFiles, outputPath);
+}
+
+async function generateChunkedAudioWithEdge(chunks, outputPath, tmpDir) {
+    const chunkFiles = [];
+    for (let i = 0; i < chunks.length; i++) {
+        const chunkPath = path.join(tmpDir, `edge_chunk_${i}.mp3`);
+        await edgeTTS(chunks[i], chunkPath);
+        chunkFiles.push(chunkPath);
+    }
+    concatenateMp3Files(chunkFiles, outputPath);
+}
+
 // ─── TTS: Google Cloud ────────────────────────────────────────────────────────
 async function googleTTS(text) {
     if (!process.env.GOOGLE_TTS_API_KEY || process.env.GOOGLE_TTS_API_KEY === 'your_google_tts_key') {
@@ -176,7 +241,7 @@ async function googleTTS(text) {
     const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
     const client = new TextToSpeechClient({ key: process.env.GOOGLE_TTS_API_KEY });
     const [response] = await client.synthesizeSpeech({
-        input: { text: text.substring(0, 5000) },
+        input: { text },
         voice: { languageCode: 'en-IN', name: 'en-IN-Neural2-D', ssmlGender: 'NEUTRAL' },
         audioConfig: { audioEncoding: 'MP3', speakingRate: 0.9 },
     });
@@ -194,7 +259,7 @@ async function edgeTTS(text, outputPath) {
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
     try {
-        await tts.toFile(tmpDir, text.substring(0, 6000));
+        await tts.toFile(tmpDir, text);
         tts.close();
 
         // Move the generated audio.mp3 to the expected outputPath
@@ -382,46 +447,81 @@ function silentFallback(outputPath) {
 async function generateAudioForText(text, outputPath) {
     // Clean text for TTS — remove control chars but preserve printable ASCII & common punctuation
     const cleanText = mathToSpeech(text)
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')  // remove control chars only
-        .replace(/[^\x20-\x7E\n\r\t]/g, ' ')                 // keep printable ASCII, allow newlines
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
+        .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
-    // 1. Try Google TTS
-    try {
-        const buf = await googleTTS(cleanText);
-        fs.writeFileSync(outputPath, buf);
-        console.log('✅ Google TTS used');
-        return 'google';
-    } catch (e) {
-        console.log('ℹ️  Google TTS skipped:', e.message);
-    }
+    const chunks = splitTextIntoChunks(cleanText, 4500);
+    const tmpDir = path.join(os.tmpdir(), `tts_chunks_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
-    // 2. Try Edge TTS (Microsoft, free, requires Internet)
-    try {
-        await edgeTTS(cleanText, outputPath);
-        console.log('✅ Edge TTS used');
-        return 'edge';
-    } catch (e) {
-        console.warn('⚠️  Edge TTS failed:', String(e));
-    }
+    const cleanupTmp = () => {
+        try {
+            if (fs.existsSync(tmpDir)) {
+                fs.readdirSync(tmpDir).forEach(file => fs.unlinkSync(path.join(tmpDir, file)));
+                fs.rmdirSync(tmpDir);
+            }
+        } catch (_) {}
+    };
 
-    // 3. Try Windows SAPI via PowerShell (offline)
     try {
+        if (chunks.length === 1) {
+            try {
+                const buf = await googleTTS(cleanText);
+                fs.writeFileSync(outputPath, buf);
+                console.log('✅ Google TTS used');
+                return 'google';
+            } catch (e) {
+                console.log('ℹ️  Google TTS skipped:', e.message);
+            }
+
+            try {
+                await edgeTTS(cleanText, outputPath);
+                console.log('✅ Edge TTS used');
+                return 'edge';
+            } catch (e) {
+                console.warn('⚠️  Edge TTS failed:', String(e));
+            }
+
+            try {
+                await windowsSAPITTS(cleanText, outputPath);
+                if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
+                    console.log('✅ Windows SAPI TTS used');
+                    return 'sapi';
+                }
+                throw new Error('SAPI output too small');
+            } catch (e) {
+                console.warn('⚠️  Windows SAPI TTS failed:', e.message);
+            }
+        }
+
+        // Long text: chunk and merge into a single file
+        try {
+            await generateChunkedAudioWithGoogle(chunks, outputPath, tmpDir);
+            console.log('✅ Google TTS chunked audio used');
+            return 'google';
+        } catch (e) {
+            console.log('ℹ️  Chunked Google TTS skipped:', e.message);
+        }
+
+        try {
+            await generateChunkedAudioWithEdge(chunks, outputPath, tmpDir);
+            console.log('✅ Edge TTS chunked audio used');
+            return 'edge';
+        } catch (e) {
+            console.warn('⚠️  Chunked Edge TTS failed:', String(e));
+        }
+
         await windowsSAPITTS(cleanText, outputPath);
         if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
             console.log('✅ Windows SAPI TTS used');
             return 'sapi';
         }
         throw new Error('SAPI output too small');
-    } catch (e) {
-        console.warn('⚠️  Windows SAPI TTS failed:', e.message);
+    } finally {
+        cleanupTmp();
     }
-
-    // 4. Last resort: silent placeholder
-    silentFallback(outputPath);
-    console.warn('⚠️  Silent placeholder used – no TTS engine available');
-    return 'fallback';
 }
 
 // ─── Extract chapters only (no audio) – called at upload time ────────────────
@@ -443,10 +543,12 @@ async function extractChaptersOnly(material) {
     }
 }
 
-// ─── Generate audio for entire material + all chapters ────────────────────────
+// ─── Generate audio for entire material + all chapters + image descriptions ──
 async function generateFromMaterial(material) {
     let fullText = '';
     let chapters = [];
+    let imageDescriptions = [];
+    let numPages = 0;
 
     // 1. Extract text from PDF (primary source)
     if (material.pdfUrl) {
@@ -454,27 +556,78 @@ async function generateFromMaterial(material) {
             console.log(`📄 Extracting PDF text from: ${material.pdfUrl}`);
             const extracted = await extractTextFromPDF(material.pdfUrl);
             fullText = (extracted.fullText || '').trim();
-            console.log(`✅ Extracted ${fullText.length} chars from PDF (${extracted.numPages} pages)`);
+            numPages = extracted.numPages || 0;
+            console.log(`✅ Extracted ${fullText.length} chars from PDF (${numPages} pages)`);
         } catch (err) {
             console.warn('⚠️  PDF extraction failed:', err.message);
         }
     }
 
-    // 2. Append teacher notes if available
+    // 2. Extract images and descriptions from PDF
+    if (material.pdfUrl) {
+        try {
+            console.log(`🖼️  Extracting images from PDF...`);
+            imageDescriptions = await imageDescriptionService.extractImagesWithDescriptions(material.pdfUrl);
+            console.log(`✅ Found and described ${imageDescriptions.length} images`);
+        } catch (err) {
+            console.warn('⚠️  Image extraction/description failed:', err.message);
+        }
+    }
+
+    // 3. Append teacher notes if available
     if (material.teacherNotes) {
         fullText = fullText
             ? `${material.teacherNotes}\n\n${fullText}`
             : material.teacherNotes;
     }
 
-    // 3. Fallback so we always have something to narrate
-    if (!fullText || fullText.length < 20) {
-        fullText = 'No readable content was found in this material. Please ensure the PDF contains selectable text and not just scanned images.';
+    // 4. Interleave image descriptions into the text at the correct page positions
+    let audioText = '';
+    if (numPages > 1) {
+        // Try to split by page using \f (form feed) or fallback to even split
+        let pageTexts = fullText.split('\f');
+        if (pageTexts.length !== numPages) {
+            // fallback: split by lines and divide evenly
+            const lines = fullText.split('\n');
+            const linesPerPage = Math.ceil(lines.length / numPages);
+            pageTexts = [];
+            for (let i = 0; i < numPages; i++) {
+                pageTexts.push(lines.slice(i * linesPerPage, (i + 1) * linesPerPage).join(' '));
+            }
+        }
+        for (let i = 0; i < numPages; i++) {
+            audioText += pageTexts[i] ? pageTexts[i].trim() : '';
+            // Insert image descriptions for this page
+            const imgs = imageDescriptions.filter(img => img.pageNum === (i + 1));
+            if (imgs.length > 0) {
+                audioText += '\n';
+                imgs.forEach(img => {
+                    audioText += `Image on page ${img.pageNum}: ${img.description}\n`;
+                });
+            }
+            audioText += '\n';
+        }
+    } else {
+        // Single page or fallback
+        audioText = fullText;
+        if (imageDescriptions.length > 0) {
+            audioText += '\n';
+            imageDescriptions.forEach(img => {
+                audioText += `Image on page ${img.pageNum}: ${img.description}\n`;
+            });
+        }
     }
 
-    // 4. Auto-detect chapters from extracted text (always re-detect, ignore stale DB chapters)
-    if (fullText.length > 200) {
-        const detected = detectChapters(fullText);
+    audioText = audioText.trim();
+    if (!audioText || audioText.length < 20) {
+        audioText = 'No readable content was found in this material. Please ensure the PDF contains selectable text and not just scanned images.';
+    }
+
+    console.log(`🧠 Audio content prepared: ${audioText.length} chars, images=${imageDescriptions.length}`);
+
+    // 5. Auto-detect chapters from extracted text (always re-detect, ignore stale DB chapters)
+    if (audioText.length > 200) {
+        const detected = detectChapters(audioText);
         if (detected && detected.length > 0) {
             chapters = detected.map((ch, i) => ({
                 title: ch.title,
@@ -487,55 +640,25 @@ async function generateFromMaterial(material) {
         }
     }
 
-    // 5. Generate full-material audio (from full extracted text, up to 50k chars)
+    // 6. Generate full-material audio (from full extracted text + image descriptions)
     const mainFilename = `material_${material._id}_${Date.now()}.mp3`;
     const mainOutputPath = path.join(AUDIO_DIR, mainFilename);
-    await generateAudioForText(fullText.substring(0, 50000), mainOutputPath);
+    await generateAudioForText(audioText, mainOutputPath);
     console.log(`🔊 Main audio generated: ${mainFilename}`);
 
-    // 6. Generate per-chapter audio in parallel (batches of 3 to avoid overwhelming Edge TTS)
-    const BATCH_SIZE = 3;
-    const updatedChapters = new Array(chapters.length);
-
-    for (let batchStart = 0; batchStart < chapters.length; batchStart += BATCH_SIZE) {
-        const batchEnd = Math.min(batchStart + BATCH_SIZE, chapters.length);
-        const batch = [];
-
-        for (let i = batchStart; i < batchEnd; i++) {
-            const ch = chapters[i];
-            const chFilename = `chapter_${material._id}_${i}_${Date.now()}.mp3`;
-            const chOutputPath = path.join(AUDIO_DIR, chFilename);
-            const chText = ch.text || ch.title || `Chapter ${i + 1}`;
-
-            batch.push(
-                generateAudioForText(chText, chOutputPath).then(() => {
-                    updatedChapters[i] = {
-                        title: ch.title,
-                        startPage: ch.startPage || i + 1,
-                        audioUrl: `/uploads/audio/${chFilename}`,
-                        transcript: chText.substring(0, 5000), // store excerpt for quiz
-                    };
-                    console.log(`  📖 Chapter ${i + 1}/${chapters.length}: ${ch.title} (${chText.length} chars)`);
-                }).catch(err => {
-                    console.error(`  ❌ Chapter ${i + 1} audio failed:`, err.message);
-                    // Store chapter without audio so it still appears in list
-                    updatedChapters[i] = {
-                        title: ch.title,
-                        startPage: ch.startPage || i + 1,
-                        audioUrl: '',
-                        transcript: chText.substring(0, 5000),
-                    };
-                })
-            );
-        }
-
-        await Promise.all(batch);
-    }
+    // 7. Do not create separate chapter audio files. The main audio file is the single canonical output.
+    const updatedChapters = chapters.map((ch, i) => ({
+        title: ch.title,
+        startPage: ch.startPage || i + 1,
+        audioUrl: '',
+        transcript: ch.text.substring(0, 5000),
+    }));
 
     return {
         audioUrl: `/uploads/audio/${mainFilename}`,
-        transcript: fullText.substring(0, 10000),
-        chapters: updatedChapters.filter(Boolean), // filter out any undefined slots
+        transcript: audioText.substring(0, 10000),
+        chapters: updatedChapters,
+        imageDescriptions: imageDescriptions,
     };
 }
 
