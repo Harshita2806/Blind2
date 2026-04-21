@@ -185,11 +185,17 @@ const generateAudio = async (req, res) => {
             }));
         }
 
+        // Save image descriptions
+        if (result.imageDescriptions && result.imageDescriptions.length > 0) {
+            material.imageDescriptions = result.imageDescriptions;
+            console.log(`📸 Saved ${result.imageDescriptions.length} image descriptions`);
+        }
+
         await material.save({ validateBeforeSave: false });
 
         res.status(200).json({
             success: true,
-            message: `Audio generated for ${result.chapters?.length || 0} chapters`,
+            message: `Audio generated for ${result.chapters?.length || 0} chapters${result.imageDescriptions?.length ? ` and ${result.imageDescriptions.length} images` : ''}`,
             data: material,
         });
     } catch (error) {
