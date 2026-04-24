@@ -57,6 +57,13 @@ const materialSchema = new mongoose.Schema({
         type: String,
         default: '',
     },
+    // AI-generated image descriptions from PDF
+    imageDescriptions: [{
+        pageNum: Number,
+        imageIndex: Number,
+        description: String,
+        createdAt: { type: Date, default: Date.now },
+    }],
     audioUrl: {
         type: String,
         default: '',
