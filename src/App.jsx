@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { SocketProvider } from "./context/SocketContext";
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
 import Teacher from "./pages/TeacherPage";
@@ -52,7 +53,8 @@ function AuthRoute({ children }) {
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
+      <SocketProvider>
+        <Router>
         <Routes>
           {/* Public */}
           <Route path="/" element={<LandingPage />} />
@@ -95,6 +97,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
+    </SocketProvider>
     </AuthProvider>
   );
 }

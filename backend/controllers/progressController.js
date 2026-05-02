@@ -1,4 +1,5 @@
 const Progress = require('../models/Progress');
+const { getIO } = require('../socket');
 
 // ─── GET /api/progress ────────────────────────────────────────────────────────
 const getProgress = async (req, res) => {
@@ -55,9 +56,23 @@ const updateProgress = async (req, res) => {
         { student: req.user._id, material: materialId },
         update,
         { new: true, upsert: true, setDefaultsOnInsert: true }
-    ).populate('material', 'title subject');
+    ).populate('material', 'title subject teacher');
 
     res.status(200).json({ success: true, data: progress });
+
+    // Emit progress update to teacher
+    if (progress?.material?.teacher) {
+        const io = getIO();
+        io.to(`teacher-${progress.material.teacher}`).emit('progress-update', {
+            studentId: req.user._id,
+            progressPercentage: progress.percentComplete,
+            courseInfo: {
+                materialId,
+                title: progress.material.title,
+                subject: progress.material.subject,
+            },
+        });
+    }
 };
 
 // ─── POST /api/progress/:materialId/bookmark ──────────────────────────────────

@@ -15,6 +15,7 @@ const http = require('http');
 const { execFile, spawn } = require('child_process');
 const os = require('os');
 const imageDescriptionService = require('./imageDescriptionService');
+const { getIO } = require('../socket');
 
 // ─── Ensure audio directory exists ───────────────────────────────────────────
 const AUDIO_DIR = path.join(__dirname, '..', 'uploads', 'audio');
@@ -544,7 +545,8 @@ async function extractChaptersOnly(material) {
 }
 
 // ─── Generate audio for entire material + all chapters + image descriptions ──
-async function generateFromMaterial(material) {
+async function generateFromMaterial(material, userId) {
+    const io = getIO();
     let fullText = '';
     let chapters = [];
     let imageDescriptions = [];
@@ -558,6 +560,7 @@ async function generateFromMaterial(material) {
             fullText = (extracted.fullText || '').trim();
             numPages = extracted.numPages || 0;
             console.log(`✅ Extracted ${fullText.length} chars from PDF (${numPages} pages)`);
+            io.to(`user-${userId}`).emit('audio-progress', { progress: 20, message: 'Text extracted from PDF' });
         } catch (err) {
             console.warn('⚠️  PDF extraction failed:', err.message);
         }
@@ -569,6 +572,7 @@ async function generateFromMaterial(material) {
             console.log(`🖼️  Extracting images from PDF...`);
             imageDescriptions = await imageDescriptionService.extractImagesWithDescriptions(material.pdfUrl);
             console.log(`✅ Found and described ${imageDescriptions.length} images`);
+            io.to(`user-${userId}`).emit('audio-progress', { progress: 40, message: 'Images processed' });
         } catch (err) {
             console.warn('⚠️  Image extraction/description failed:', err.message);
         }
@@ -624,6 +628,7 @@ async function generateFromMaterial(material) {
     }
 
     console.log(`🧠 Audio content prepared: ${audioText.length} chars, images=${imageDescriptions.length}`);
+    io.to(`user-${userId}`).emit('audio-progress', { progress: 50, message: 'Content prepared for audio generation' });
 
     // 5. Auto-detect chapters from extracted text (always re-detect, ignore stale DB chapters)
     if (audioText.length > 200) {
@@ -645,6 +650,7 @@ async function generateFromMaterial(material) {
     const mainOutputPath = path.join(AUDIO_DIR, mainFilename);
     await generateAudioForText(audioText, mainOutputPath);
     console.log(`🔊 Main audio generated: ${mainFilename}`);
+    io.to(`user-${userId}`).emit('audio-progress', { progress: 80, message: 'Main audio generated' });
 
     // 7. Do not create separate chapter audio files. The main audio file is the single canonical output.
     const updatedChapters = chapters.map((ch, i) => ({
@@ -654,12 +660,15 @@ async function generateFromMaterial(material) {
         transcript: ch.text.substring(0, 5000),
     }));
 
-    return {
+    const response = {
         audioUrl: `/uploads/audio/${mainFilename}`,
         transcript: audioText.substring(0, 10000),
         chapters: updatedChapters,
         imageDescriptions: imageDescriptions,
     };
+
+    io.to(`user-${userId}`).emit('audio-complete', { materialId: material._id, audioUrl: response.audioUrl });
+    return response;
 }
 
 // ─── Generate audio from plain text ───────────────────────────────────────────
