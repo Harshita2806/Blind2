@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Menu, X, LogOut, Play, Pause, SkipBack, SkipForward, Volume2, Zap, BookOpen,
     Headphones, BarChart, Grid, List, ChevronRight, Activity, HelpCircle, Mic,
-    Brain, CheckCircle, XCircle, Clock, Trophy, AlertCircle
+    Brain, CheckCircle, XCircle, Clock, Trophy, AlertCircle, Bell
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
 import { useNavigate } from "react-router-dom";
 import { materialsAPI, progressAPI, quizzesAPI } from "../services/api";
 
@@ -17,6 +18,7 @@ import { materialsAPI, progressAPI, quizzesAPI } from "../services/api";
  */
 export default function StudentPage() {
     const { user, logout } = useAuth();
+    const { announcements, audioProgress, audioComplete } = useSocket();
     const navigate = useNavigate();
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -68,6 +70,25 @@ export default function StudentPage() {
         // Silently update ARIA only on mount — do NOT auto-speak on page load
         announce("Access Learn loaded. Press H for keyboard shortcuts.");
     }, [fetchMaterials, announce]);
+
+    useEffect(() => {
+        if (announcements.length > 0) {
+            const latest = announcements[0];
+            announce(`New announcement: ${latest.title}`);
+        }
+    }, [announcements, announce]);
+
+    useEffect(() => {
+        if (audioProgress) {
+            announce(`Audio generation ${audioProgress.progress} percent complete. ${audioProgress.message}`);
+        }
+    }, [audioProgress, announce]);
+
+    useEffect(() => {
+        if (audioComplete) {
+            announce(`Audio generation complete. You can now play the new material.`);
+        }
+    }, [audioComplete, announce]);
 
     // Keyboard Shortcuts — use `speak` (voice) because key presses are deliberate
     useEffect(() => {
@@ -170,6 +191,64 @@ export default function StudentPage() {
                     </button>
                 </div>
             </header>
+
+            {(audioProgress || audioComplete) && (
+                <div className="mx-auto mt-6 max-w-7xl rounded-3xl border border-teal-500/20 bg-[#061519] p-4 px-6 text-sm text-gray-200 shadow-lg">
+                    {audioProgress && (
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                            <div>
+                                <p className="font-semibold text-white">Audio generation in progress</p>
+                                <p className="text-gray-400">{audioProgress.message} — {audioProgress.progress}%</p>
+                            </div>
+                            <div className="text-xs uppercase tracking-[0.25em] text-teal-300">Live</div>
+                        </div>
+                    )}
+                    {audioComplete && (
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="font-semibold text-white">Audio generation complete</p>
+                                <p className="text-gray-400">New audio is ready for material ID {audioComplete.materialId}.</p>
+                            </div>
+                            <a href={audioComplete.audioUrl} target="_blank" rel="noreferrer" className="text-teal-300 hover:text-white">Open audio</a>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── Announcements Display ────────────────────────────────────── */}
+            {announcements.length > 0 && (
+                <div className="mb-6">
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                        className="bg-gradient-to-r from-teal-500/10 to-blue-500/10 border border-teal-500/30 rounded-2xl p-6"
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-teal-500/20 rounded-lg">
+                                <Bell size={20} className="text-teal-400" />
+                            </div>
+                            <h3 className="text-lg font-black text-white">Latest Announcement</h3>
+                        </div>
+                        <div className="space-y-3">
+                            {announcements.slice(0, 3).map((announcement) => (
+                                <motion.div
+                                    key={announcement._id}
+                                    initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                                    className="p-4 bg-white/[0.02] border border-teal-900/20 rounded-xl"
+                                >
+                                    <h4 className="font-bold text-white mb-1">{announcement.title}</h4>
+                                    <p className="text-gray-300 text-sm leading-relaxed">{announcement.content}</p>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        {new Date(announcement.createdAt).toLocaleDateString("en-IN", {
+                                            day: "numeric", month: "short", year: "numeric",
+                                            hour: "2-digit", minute: "2-digit"
+                                        })}
+                                    </p>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </motion.div>
+                </div>
+            )}
 
             {/* ── Main Content ────────────────────────────────────────────── */}
             <main id="main-content" className="flex-1 pt-24 pb-12 px-4 md:px-8 max-w-7xl mx-auto w-full">

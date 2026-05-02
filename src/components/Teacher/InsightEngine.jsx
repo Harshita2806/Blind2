@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Users, BookOpen, BarChart, TrendingUp, Award, Clock, Loader2 } from "lucide-react";
 import { analyticsAPI } from "../../services/api";
+import { useSocket } from "../../context/SocketContext";
 
 export default function InsightEngine() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const { progressUpdates, clearProgressUpdates } = useSocket();
+    const liveUpdates = progressUpdates.slice(0, 5);
 
     useEffect(() => {
         analyticsAPI.getStudents()
             .then(res => setData(res.data))
-            .catch(err => setError("Failed to load analytics."))
+            .catch(() => setError("Failed to load analytics."))
             .finally(() => setLoading(false));
     }, []);
 
@@ -28,19 +30,50 @@ export default function InsightEngine() {
     ];
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pt-24 px-6 md:px-10 max-w-6xl mx-auto pb-12">
+        <div className="pt-24 px-6 md:px-10 max-w-6xl mx-auto pb-12">
             <h2 className="text-3xl font-bold text-white mb-2 font-serif">Insight Engine</h2>
             <p className="text-gray-500 mb-8">Real-time analytics on student performance and engagement.</p>
+
+            {liveUpdates.length > 0 && (
+                <div className="mb-8 rounded-3xl border border-teal-500/20 bg-[#061519] p-5">
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h3 className="text-lg font-semibold text-white">Live progress updates</h3>
+                            <p className="text-sm text-gray-400">Recent student progress activity will appear here instantly.</p>
+                        </div>
+                        <button
+                            onClick={() => { clearProgressUpdates(); }}
+                            className="text-xs uppercase tracking-[0.24em] px-3 py-2 bg-white/5 rounded-full text-teal-300 hover:bg-teal-400/10"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                    <div className="space-y-2">
+                        {liveUpdates.map((update, idx) => (
+                            <div key={idx} className="rounded-2xl bg-[#0d1720] p-4 border border-white/5">
+                                <p className="text-sm text-gray-300">
+                                    <span className="font-semibold text-white">Student:</span> {update.studentId}
+                                </p>
+                                <p className="text-sm text-gray-300">
+                                    <span className="font-semibold text-white">Material:</span> {update.courseInfo?.title || update.courseInfo?.materialId}
+                                </p>
+                                <p className="text-sm text-gray-300">
+                                    <span className="font-semibold text-white">Progress:</span> {update.progressPercentage}%
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Overview stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
                 {stats.map((s, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                        className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex flex-col items-center text-center">
+                    <div key={i} className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex flex-col items-center text-center">
                         <div className={`text-${s.color}-400 mb-2`}>{s.icon}</div>
                         <div className="text-3xl font-black text-white">{s.value}</div>
                         <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1 font-bold">{s.label}</div>
-                    </motion.div>
+                    </div>
                 ))}
             </div>
 
@@ -65,9 +98,8 @@ export default function InsightEngine() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {data.students.map((s, i) => (
-                                    <motion.tr key={s._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
-                                        className="hover:bg-white/[0.02] transition-colors">
+                                {data.students.map((s) => (
+                                    <tr key={s._id} className="hover:bg-white/[0.02] transition-colors">
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-xs">
@@ -95,13 +127,13 @@ export default function InsightEngine() {
                                                 {s.avgQuizScore > 0 ? `${s.avgQuizScore}%` : "—"}
                                             </span>
                                         </td>
-                                    </motion.tr>
+                                    </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
                 )}
             </div>
-        </motion.div>
+        </div>
     );
 }

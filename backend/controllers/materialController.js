@@ -167,7 +167,7 @@ const generateAudio = async (req, res) => {
     await material.save({ validateBeforeSave: false });
 
     try {
-        const result = await ttsService.generateFromMaterial(material);
+        const result = await ttsService.generateFromMaterial(material, req.user._id);
 
         material.audioUrl = result.audioUrl;
         material.audioDuration = result.duration || 0;
