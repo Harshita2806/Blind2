@@ -1,4 +1,4 @@
-﻿/**
+/**
  * TTS Service ΓÇô PDF text extraction, chapter detection, and audio generation
  *
  * TTS Strategy (in order):
@@ -15,6 +15,7 @@ const http = require('http');
 const { execFile, spawn } = require('child_process');
 const os = require('os');
 const imageDescriptionService = require('./imageDescriptionService');
+const { getIO } = require('../socket');
 
 // ΓöÇΓöÇΓöÇ Ensure audio directory exists ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const AUDIO_DIR = path.join(__dirname, '..', 'uploads', 'audio');
@@ -543,8 +544,9 @@ async function extractChaptersOnly(material) {
     }
 }
 
-// ΓöÇΓöÇΓöÇ Generate audio for entire material + all chapters + image descriptions ΓöÇΓöÇ
-async function generateFromMaterial(material) {
+// ─── Generate audio for entire material + all chapters + image descriptions ──
+async function generateFromMaterial(material, userId) {
+    const io = getIO();
     let fullText = '';
     let chapters = [];
     let imageDescriptions = [];
@@ -557,7 +559,8 @@ async function generateFromMaterial(material) {
             const extracted = await extractTextFromPDF(material.pdfUrl);
             fullText = (extracted.fullText || '').trim();
             numPages = extracted.numPages || 0;
-            console.log(`Γ£à Extracted ${fullText.length} chars from PDF (${numPages} pages)`);
+            console.log(`✅ Extracted ${fullText.length} chars from PDF (${numPages} pages)`);
+            io.to(`user-${userId}`).emit('audio-progress', { progress: 20, message: 'Text extracted from PDF' });
         } catch (err) {
             console.warn('ΓÜá∩╕Å  PDF extraction failed:', err.message);
         }
@@ -568,7 +571,8 @@ async function generateFromMaterial(material) {
         try {
             console.log(`≡ƒû╝∩╕Å  Extracting images from PDF...`);
             imageDescriptions = await imageDescriptionService.extractImagesWithDescriptions(material.pdfUrl);
-            console.log(`Γ£à Found and described ${imageDescriptions.length} images`);
+            console.log(`✅ Found and described ${imageDescriptions.length} images`);
+            io.to(`user-${userId}`).emit('audio-progress', { progress: 40, message: 'Images processed' });
         } catch (err) {
             console.warn('ΓÜá∩╕Å  Image extraction/description failed:', err.message);
         }
@@ -623,7 +627,8 @@ async function generateFromMaterial(material) {
         audioText = 'No readable content was found in this material. Please ensure the PDF contains selectable text and not just scanned images.';
     }
 
-    console.log(`≡ƒºá Audio content prepared: ${audioText.length} chars, images=${imageDescriptions.length}`);
+    console.log(`🧠 Audio content prepared: ${audioText.length} chars, images=${imageDescriptions.length}`);
+    io.to(`user-${userId}`).emit('audio-progress', { progress: 50, message: 'Content prepared for audio generation' });
 
     // 5. Auto-detect chapters from extracted text (always re-detect, ignore stale DB chapters)
     if (audioText.length > 200) {
@@ -644,7 +649,8 @@ async function generateFromMaterial(material) {
     const mainFilename = `material_${material._id}_${Date.now()}.mp3`;
     const mainOutputPath = path.join(AUDIO_DIR, mainFilename);
     await generateAudioForText(audioText, mainOutputPath);
-    console.log(`≡ƒöè Main audio generated: ${mainFilename}`);
+    console.log(`🔊 Main audio generated: ${mainFilename}`);
+    io.to(`user-${userId}`).emit('audio-progress', { progress: 80, message: 'Main audio generated' });
 
     // 7. Do not create separate chapter audio files. The main audio file is the single canonical output.
     const updatedChapters = chapters.map((ch, i) => ({
@@ -654,12 +660,15 @@ async function generateFromMaterial(material) {
         transcript: ch.text.substring(0, 5000),
     }));
 
-    return {
+    const response = {
         audioUrl: `/uploads/audio/${mainFilename}`,
         transcript: audioText.substring(0, 10000),
         chapters: updatedChapters,
         imageDescriptions: imageDescriptions,
     };
+
+    io.to(`user-${userId}`).emit('audio-complete', { materialId: material._id, audioUrl: response.audioUrl });
+    return response;
 }
 
 // ΓöÇΓöÇΓöÇ Generate audio from plain text ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ

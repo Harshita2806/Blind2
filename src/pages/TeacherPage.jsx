@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { materialsAPI, analyticsAPI } from "../services/api";
+import { materialsAPI, analyticsAPI, announcementsAPI } from "../services/api";
 import { quizzesAPI } from "../services/api";
 
 const SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "History", "Geography", "English", "Science", "Social Science", "Other"];
@@ -155,6 +155,7 @@ export default function TeacherPage() {
                     </h1>
                     {[
                         { id: "dashboard", label: "Dashboard", icon: <Zap size={16} /> },
+                        { id: "announcements", label: "Announcements", icon: <FileText size={16} /> },
                         { id: "analytics", label: "Analytics", icon: <BarChart3 size={16} /> },
                     ].map(item => (
                         <button
@@ -210,6 +211,9 @@ export default function TeacherPage() {
                                 GRADES={GRADES}
                             />
                         )}
+                        {activeSection === "announcements" && (
+                            <AnnouncementsSection key="announcements" />
+                        )}
                         {activeSection === "analytics" && (
                             <AnalyticsSection
                                 key="analytics"
@@ -244,6 +248,7 @@ export default function TeacherPage() {
                             <div className="flex-1 p-4 space-y-2">
                                 {[
                                     { id: "dashboard", label: "Dashboard", icon: <Zap size={18} /> },
+                                    { id: "announcements", label: "Announcements", icon: <FileText size={18} /> },
                                     { id: "analytics", label: "Analytics", icon: <BarChart3 size={18} /> },
                                 ].map(item => (
                                     <button
@@ -698,6 +703,162 @@ function AnalyticsSection({ analytics, materials }) {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
+}
+
+// ─── Announcements Section ───────────────────────────────────────────────────
+function AnnouncementsSection() {
+    const [announcements, setAnnouncements] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [newAnnouncement, setNewAnnouncement] = useState({ title: "", content: "" });
+    const [creating, setCreating] = useState(false);
+
+    const fetchAnnouncements = async () => {
+        try {
+            const res = await announcementsAPI.getAll();
+            setAnnouncements(res.data || []);
+        } catch (err) {
+            setError(err.message || "Failed to load announcements");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchAnnouncements(); }, []);
+
+    const handleCreateAnnouncement = async () => {
+        if (!newAnnouncement.title.trim() || !newAnnouncement.content.trim()) {
+            setError("Please fill in both title and content");
+            return;
+        }
+
+        setCreating(true);
+        setError("");
+        try {
+            await announcementsAPI.create(newAnnouncement);
+            setNewAnnouncement({ title: "", content: "" });
+            fetchAnnouncements();
+        } catch (err) {
+            setError(err.message || "Failed to create announcement");
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const handleDeleteAnnouncement = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this announcement?")) return;
+        try {
+            await announcementsAPI.delete(id);
+            fetchAnnouncements();
+        } catch (err) {
+            setError(err.message || "Failed to delete announcement");
+        }
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            className="space-y-8"
+        >
+            {/* Header */}
+            <div>
+                <h2 className="text-4xl font-black text-white mb-1">Announcements</h2>
+                <p className="text-gray-400 font-medium">Send real-time notifications to all students.</p>
+            </div>
+
+            {/* Create Announcement */}
+            <div className="bg-[#0a0a0f] border border-teal-900/30 rounded-2xl p-6">
+                <h3 className="text-xl font-black mb-4 text-white flex items-center gap-2">
+                    <FileText size={22} className="text-teal-400" /> Create New Announcement
+                </h3>
+
+                {error && (
+                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl">
+                        {error}
+                    </div>
+                )}
+
+                <div className="space-y-4">
+                    <input
+                        type="text"
+                        placeholder="Announcement Title"
+                        value={newAnnouncement.title}
+                        onChange={(e) => setNewAnnouncement(prev => ({ ...prev, title: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-teal-900/30 focus:border-teal-500 focus:bg-white/10 outline-none text-white placeholder:text-gray-600 transition-all"
+                    />
+                    <textarea
+                        placeholder="Announcement Content"
+                        value={newAnnouncement.content}
+                        onChange={(e) => setNewAnnouncement(prev => ({ ...prev, content: e.target.value }))}
+                        rows={4}
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-teal-900/30 focus:border-teal-500 focus:bg-white/10 outline-none text-white placeholder:text-gray-600 transition-all resize-none"
+                    />
+                    <button
+                        onClick={handleCreateAnnouncement}
+                        disabled={creating}
+                        className="px-6 py-3 bg-teal-500 hover:bg-teal-400 disabled:bg-gray-700 rounded-xl font-black transition-all flex items-center gap-2 text-black"
+                    >
+                        {creating ? "Creating..." : "Send Announcement"}
+                    </button>
+                </div>
+            </div>
+
+            {/* Announcements List */}
+            <div className="bg-[#0a0a0f] border border-teal-900/30 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-black text-white flex items-center gap-2">
+                        <FileText size={22} className="text-teal-400" /> Recent Announcements
+                    </h3>
+                    <button onClick={fetchAnnouncements} className="text-xs text-teal-400 hover:text-teal-300 font-bold border border-teal-900/50 px-3 py-1.5 rounded-lg hover:border-teal-600/40 transition-all">
+                        Refresh
+                    </button>
+                </div>
+
+                {loading ? (
+                    <div className="text-center py-16">
+                        <div className="w-10 h-10 border-4 border-teal-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                        <p className="text-gray-400 font-semibold">Loading announcements...</p>
+                    </div>
+                ) : announcements.length === 0 ? (
+                    <div className="text-center py-16">
+                        <FileText size={48} className="mx-auto mb-4 text-gray-700" />
+                        <p className="text-gray-400 font-semibold">No announcements yet.</p>
+                        <p className="text-gray-600 text-sm mt-1">Create your first announcement above.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {announcements.map((announcement) => (
+                            <motion.div
+                                key={announcement._id}
+                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                                className="p-5 bg-white/[0.02] border border-teal-900/20 rounded-xl hover:border-teal-700/30 transition-all"
+                            >
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                        <h4 className="text-lg font-black text-white mb-2">{announcement.title}</h4>
+                                        <p className="text-gray-300 leading-relaxed">{announcement.content}</p>
+                                        <p className="text-xs text-gray-500 mt-3">
+                                            {new Date(announcement.createdAt).toLocaleDateString("en-IN", {
+                                                day: "numeric", month: "short", year: "numeric",
+                                                hour: "2-digit", minute: "2-digit"
+                                            })}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDeleteAnnouncement(announcement._id)}
+                                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
+                                        title="Delete announcement"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
                 )}
             </div>

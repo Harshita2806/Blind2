@@ -1,4 +1,5 @@
 const Announcement = require('../models/Announcement');
+const { getIO } = require('../socket');
 
 const getAnnouncements = async (req, res) => {
     const filter = { isActive: true };
@@ -27,6 +28,17 @@ const createAnnouncement = async (req, res) => {
         teacher: req.user._id,
     });
     res.status(201).json({ success: true, data: announcement });
+
+    const io = getIO();
+    if (targetGrade === 'all' && targetSubject === 'all') {
+        io.to('students').emit('new-announcement', announcement);
+    } else {
+        if (targetGrade !== 'all') io.to(`students-grade-${targetGrade}`).emit('new-announcement', announcement);
+        if (targetSubject !== 'all') io.to(`students-subject-${targetSubject}`).emit('new-announcement', announcement);
+        // Fallback to all students when there is no subject-specific room information.
+        io.to('students').emit('new-announcement', announcement);
+    }
+    io.to('teachers').emit('new-announcement', announcement);
 };
 
 const updateAnnouncement = async (req, res) => {

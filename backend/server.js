@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/db');
+const { initSocket } = require('./socket');
 
 
 connectDB();
@@ -94,10 +95,12 @@ const server = app.listen(PORT, () => {
     console.log(`🌱 Environment: ${process.env.NODE_ENV || 'development'}\n`);
 });
 
+// ─── Socket.IO Setup ──────────────────────────────────────────────────────────
+const io = initSocket(server);
+
+// Handle unhandled promise rejections
 
 process.on('unhandledRejection', (err) => {
     console.error('Unhandled Rejection:', err.message);
     server.close(() => process.exit(1));
 });
-
-module.exports = app;
