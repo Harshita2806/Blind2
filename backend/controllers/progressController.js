@@ -58,6 +58,7 @@ const updateProgress = async (req, res) => {
         { new: true, upsert: true, setDefaultsOnInsert: true }
     ).populate('material', 'title subject teacher');
 
+
     res.status(200).json({ success: true, data: progress });
 
     // Emit progress update to teacher
@@ -89,7 +90,7 @@ const addBookmark = async (req, res) => {
             $push: { bookmarks: { position, label: label || 'Bookmark', createdAt: new Date() } },
             lastAccessedAt: Date.now(),
         },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
+        { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
     );
 
     res.status(200).json({ success: true, data: progress.bookmarks });
@@ -100,7 +101,7 @@ const deleteBookmark = async (req, res) => {
     const progress = await Progress.findOneAndUpdate(
         { student: req.user._id, material: req.params.materialId },
         { $pull: { bookmarks: { _id: req.params.bookmarkId } } },
-        { new: true }
+        { returnDocument: 'after' }
     );
 
     if (!progress) return res.status(404).json({ success: false, message: 'Progress not found' });

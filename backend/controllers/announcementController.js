@@ -47,7 +47,7 @@ const updateAnnouncement = async (req, res) => {
     if (announcement.teacher.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
         return res.status(403).json({ success: false, message: 'Not authorized' });
     }
-    announcement = await Announcement.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    announcement = await Announcement.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
     res.status(200).json({ success: true, data: announcement });
 };
 

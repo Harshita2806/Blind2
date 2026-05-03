@@ -105,7 +105,7 @@ const updateMaterial = async (req, res) => {
     }
 
     material = await Material.findByIdAndUpdate(req.params.id, updates, {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
     });
 

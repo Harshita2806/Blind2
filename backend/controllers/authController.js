@@ -100,7 +100,7 @@ const updateProfile = async (req, res) => {
     if (preferredSpeed !== undefined) updates.preferredSpeed = preferredSpeed;
 
     const user = await User.findByIdAndUpdate(req.user._id, updates, {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
     });
 

@@ -61,44 +61,84 @@ async function extractTextFromPDF(pdfPathOrUrl) {
     return { fullText: data.text || '', numPages: data.numpages || 0 };
 }
 
-// ΓöÇΓöÇΓöÇ Chapter detection from raw text ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Chapter detection from raw text ───────────────────────────────────────
 function detectChapters(fullText) {
     const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
 
     // Chapter heading patterns
     const chapterPatterns = [
-        /^(chapter\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten|[ivxlc]+)[\s:ΓÇô-]*(.*))/i,
-        /^(unit\s+(\d+|[ivxlc]+)[\s:ΓÇô-]*(.*))/i,
-        /^(lesson\s+(\d+|[ivxlc]+)[\s:ΓÇô-]*(.*))/i,
-        /^(part\s+(I{1,3}|IV|V?I{0,3}|[12345])[\s:ΓÇô-]*(.*))/i,  // Part I/II/III/IV/1/2 only
-        /^(section\s+(\d+|[ivxlc]+)[\s:ΓÇô-]*(.*))/i,
-        /^(\d+[\.\s]+[A-Z][A-Z\s,'']{3,50})$/, // ALL-CAPS titles like "1. THE FUN THEY HAD"
+        // Chapter 1, Chapter One, Chapter I
+        /^(chapter\s+([0-9]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|[ivxlc]+)[\s:—-]*(.*))/i,
+        // Unit 1, Unit I
+        /^(unit\s+([0-9]+|[ivxlc]+)[\s:—-]*(.*))/i,
+        // Lesson 1
+        /^(lesson\s+([0-9]+|[ivxlc]+)[\s:—-]*(.*))/i,
+        // Part 1, Part I
+        /^(part\s+([0-9]+|[ivxlc]+)[\s:—-]*(.*))/i,
+        // Section 1.1
+        /^(section\s+([0-9\.]+)[\s:—-]*(.*))/i,
+        // Module 1, Topic 1, Week 1, Day 1
+        /^((module|topic|week|day)\s+([0-9]+|[ivxlc]+)[\s:—-]*(.*))/i,
+        // ALL-CAPS titles with numbers like "1. THE FUN THEY HAD" or "I. INTRODUCTION"
+        /^(([0-9]{1,2}|[IVXLC]{1,5})[\.\s]+[A-Z][A-Z\s,'':\-]{3,60})$/,
+        // Standalone keywords (Introduction, Conclusion, etc.)
+        /^(introduction|preface|foreword|appendix|glossary|bibliography|index|summary|conclusion|objectives|overview)$/i
     ];
 
     const rawChapters = [];
     let currentChapterTitle = null;
     let currentLines = [];
 
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         let isMatch = false;
+        let matchedTitle = "";
+
+        // Skip lines that look like page numbers (just a single digit or "Page X")
+        if (/^(page\s+)?\d+$/i.test(line)) continue;
+
         for (const pattern of chapterPatterns) {
-            if (pattern.test(line)) {
+            const match = line.match(pattern);
+            if (match) {
+                isMatch = true;
+                matchedTitle = line;
+
+                // ─── Multi-line Title Heuristic ───────────────────────────────────────
+                // If the matched title is very short (e.g., just "Chapter 1" or "Unit I")
+                // and the next line exists, isn't too long, and isn't another header,
+                // grab the next line as the actual title content.
+                if (matchedTitle.length < 15 && i + 1 < lines.length) {
+                    const nextLine = lines[i + 1];
+                    // Next line check: not a header pattern, and looks like a title (Title Case or short)
+                    const isNextHeader = chapterPatterns.some(p => p.test(nextLine));
+                    if (!isNextHeader && nextLine.length < 80 && nextLine.length > 3) {
+                        matchedTitle += ": " + nextLine;
+                        i++; // consume the next line
+                    }
+                }
+
                 if (currentChapterTitle !== null) {
                     rawChapters.push({
                         title: currentChapterTitle,
                         text: currentLines.join(' ').replace(/\s+/g, ' ').trim()
                     });
                 }
-                currentChapterTitle = line.length > 120 ? line.substring(0, 120) : line;
+
+                currentChapterTitle = matchedTitle.length > 150 ? matchedTitle.substring(0, 150) : matchedTitle;
                 currentLines = [];
-                isMatch = true;
                 break;
             }
         }
+
         if (!isMatch && currentChapterTitle !== null) {
+            // Avoid adding lines that look like Table of Contents entries (trailing dots/numbers)
+            if (line.includes('....') || /[\.\s]{3,}\d+$/.test(line)) {
+                continue;
+            }
             currentLines.push(line);
         }
     }
+
     if (currentChapterTitle !== null) {
         rawChapters.push({
             title: currentChapterTitle,
@@ -106,20 +146,20 @@ function detectChapters(fullText) {
         });
     }
 
-    // ΓöÇΓöÇ Post-processing: filter & deduplicate ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ─── Post-processing: filter & deduplicate ───────────────────────────────────
     // Normalize a title for comparison: remove numbers, punctuation, extra spaces
-    const normalize = (t) => t.toLowerCase().replace(/[\d\.\s_ΓÇô\-:]+/g, '').replace(/\s+/g, '');
+    const normalize = (t) => t.toLowerCase().replace(/[\d\.\s_—\-:]+/g, '').replace(/\s+/g, '');
 
     const seen = new Set();
     const chapters = [];
 
     for (const ch of rawChapters) {
-        // Skip chapters with fewer than 200 chars of body text (likely ToC entries or page headers)
+        // Skip chapters with very little text (likely ToC leftovers or artifacts)
         if (ch.text.length < 200) continue;
 
         const key = normalize(ch.title);
-        if (seen.has(key)) continue; // deduplicate same-title chapters
-        seen.add(key);
+        if (key && seen.has(key)) continue; 
+        if (key) seen.add(key);
 
         // Clean up title: collapse multiple spaces
         chapters.push({
@@ -128,14 +168,14 @@ function detectChapters(fullText) {
         });
     }
 
-    // ΓöÇΓöÇ Fallback: if no valid chapters found, split into even chunks ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ─── Fallback: split into segments ──────────────────────────────────────────
     if (chapters.length === 0) {
         const words = fullText.split(/\s+/);
         let chunk = [], count = 0, charCount = 0;
         for (const word of words) {
             chunk.push(word);
             charCount += word.length + 1;
-            if (charCount >= 3000) {
+            if (charCount >= 4000) {
                 chapters.push({ title: `Part ${++count}`, text: chunk.join(' ').trim() });
                 chunk = [];
                 charCount = 0;

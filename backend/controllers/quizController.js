@@ -73,7 +73,7 @@ const updateQuiz = async (req, res) => {
         return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    quiz = await Quiz.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    quiz = await Quiz.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after', runValidators: true });
     res.status(200).json({ success: true, data: quiz });
 };
 
