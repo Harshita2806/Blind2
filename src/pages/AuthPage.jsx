@@ -134,8 +134,8 @@ export default function AuthPage({ defaultMode }) {
 
     }, [lastCommand, isVoiceEnabled, isLogin]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    async function handleSubmit(e) {
+        if (e && e.preventDefault) e.preventDefault();
         setError("");
         setLoading(true);
 
@@ -157,7 +157,8 @@ export default function AuthPage({ defaultMode }) {
         } finally {
             setLoading(false);
         }
-    };
+    }
+
 
     return (
         <div className="h-screen w-screen bg-[#050505] font-['Inter'] text-white overflow-hidden flex items-center justify-center">

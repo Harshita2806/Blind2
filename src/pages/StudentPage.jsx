@@ -188,17 +188,18 @@ export default function StudentPage() {
         
     }, [lastCommand, materials, announcements, speak, isVoiceEnabled, activeSection]);
 
-    const handleLogout = () => {
+    function handleLogout() {
         logout();
         navigate("/auth", { replace: true });
-    };
+    }
 
-    const handleSelectMaterial = (material) => {
+    function handleSelectMaterial(material) {
         setSelectedMaterial(material);
         setActiveSection("player");
         // Only speak the title on deliberate book selection
         speak(`${material.title}. Press Space to play.`);
-    };
+    }
+
 
     return (
         <div className="min-h-screen bg-[#050507] text-white flex flex-col font-sans selection:bg-teal-400 selection:text-black">
