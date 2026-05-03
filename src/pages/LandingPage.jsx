@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useVoice } from '../context/VoiceContext';
 import { motion, AnimatePresence } from 'framer-motion';
 // Added Link for navigation
 import { Link } from 'react-router-dom';
@@ -53,6 +54,13 @@ const badgeVariants = {
 };
 
 export default function LandingPage() {
+    const { speak } = useVoice();
+
+    useEffect(() => {
+        // Welcome message for first-time visitors or on refresh
+        speak("Welcome to AudioBook. I am your voice assistant. You can navigate the site by speaking commands. Try saying 'Login' or 'Dashboard'.");
+    }, []);
+
     return (
         <div className="bg-[#050505] - font-sans selection:bg-indigo-500/30 h-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar">
             <style>{`

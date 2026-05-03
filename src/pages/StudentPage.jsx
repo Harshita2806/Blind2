@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
+import { useVoice } from "../context/VoiceContext";
 import { useNavigate } from "react-router-dom";
 import { materialsAPI, progressAPI, quizzesAPI } from "../services/api";
 
@@ -19,6 +20,7 @@ import { materialsAPI, progressAPI, quizzesAPI } from "../services/api";
 export default function StudentPage() {
     const { user, logout } = useAuth();
     const { announcements, audioProgress, audioComplete } = useSocket();
+    const { lastCommand, speak: globalSpeak, isVoiceEnabled } = useVoice();
     const navigate = useNavigate();
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -115,6 +117,76 @@ export default function StudentPage() {
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [activeSection, speak]);
+
+    // --- Voice Command Listener (Local to Student Dashboard) ---
+    useEffect(() => {
+        if (!lastCommand || !isVoiceEnabled) return;
+
+        const cmd = lastCommand.toLowerCase();
+        
+        // 1. Flexible Navigation
+        if (cmd.match(/(open|go to|show).*library/)) {
+            setActiveSection("library");
+            speak("Opening your library.");
+        } 
+        else if (cmd.match(/(open|go to|show).*quizz?es/)) {
+            setActiveSection("quizzes");
+            speak("Opening your quizzes.");
+        }
+        else if (cmd.match(/(open|go to|show|my).*progress|how (am i|is my) (doing|progress)/)) {
+            setActiveSection("progress");
+            speak("Opening your progress summary.");
+        }
+        else if (cmd.match(/read.*announcements/)) {
+            if (announcements.length > 0) {
+                const latest = announcements[0];
+                speak(`Latest announcement: ${latest.title}. ${latest.content}`);
+            } else {
+                speak("You have no new announcements.");
+            }
+        }
+
+        // 2. Audio Control (Global while on StudentPage)
+        if (cmd.match(/\b(play|resume|start)\b/)) {
+            if (activeSection === "player") {
+                // assume togglePlay is defined or passed in
+            } else {
+                speak("Please select a book first by saying play book number X.");
+            }
+        }
+        else if (cmd.match(/\b(pause|stop|hold|wait)\b/)) {
+            // assume togglePlay is defined
+        }
+        else if (cmd.match(/\b(skip|forward|next)\b/)) {
+            if (activeSection === "player") {
+                // skipForward();
+            }
+        }
+        else if (cmd.match(/\b(back|previous|rewind)\b/)) {
+            if (activeSection === "player") {
+                // skipBack();
+            }
+        }
+        else if (cmd.match(/(speed|rate|faster|slower).* (is|to|be|at) (.*)/) || cmd.match(/(faster|slower)/)) {
+            if (activeSection === "player") {
+                // handle speed
+            }
+        }
+
+        // 3. Book Selection
+        if (cmd.match(/play.*book.*(number|#)?\s?(\d+)/)) {
+            const numMatch = cmd.match(/(\d+)/);
+            if (numMatch) {
+                const idx = parseInt(numMatch[1]) - 1;
+                if (materials[idx]) {
+                    handleSelectMaterial(materials[idx]);
+                } else {
+                    speak(`Book number ${numMatch[1]} not found.`);
+                }
+            }
+        }
+        
+    }, [lastCommand, materials, announcements, speak, isVoiceEnabled, activeSection]);
 
     const handleLogout = () => {
         logout();

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Loader2, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useVoice } from "../context/VoiceContext";
 import { authAPI } from "../services/api";
 
 import s1 from "../assets/s1.png";
@@ -28,6 +29,7 @@ export default function AuthPage({ defaultMode }) {
     const [error, setError] = useState("");
 
     const { login } = useAuth();
+    const { lastCommand, speak, isVoiceEnabled } = useVoice();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -37,6 +39,100 @@ export default function AuthPage({ defaultMode }) {
 
     // Clear error when switching mode
     useEffect(() => { setError(""); }, [isLogin]);
+
+    // --- Voice Command Listener for Auth ---
+    useEffect(() => {
+        if (!lastCommand || !isVoiceEnabled) return;
+
+        const cmd = lastCommand.toLowerCase();
+
+        // 1. Switch Mode
+        if (cmd.match(/(login page|sign in page|go to login|show login)/)) {
+            setIsLogin(true);
+            speak("Switched to login mode.");
+        } 
+        else if (cmd.match(/(signup page|create account page|register page|go to signup)/)) {
+            setIsLogin(false);
+            speak("Switched to create account mode.");
+        }
+        else if (cmd.match(/switch|change|go to|show.*(signup|create|register)/)) {
+            setIsLogin(false);
+            speak("Switched to create account mode.");
+        } else if (cmd.match(/switch|change|go to|show.*(login|sign in|existing)/)) {
+            setIsLogin(true);
+            speak("Switched to login mode.");
+        }
+
+        // 2. Fill Email
+        if (cmd.match(/(email|user|login).* (is|to|be) (.*)/) || cmd.includes("@")) {
+            let emailValue = "";
+            if (cmd.includes("@")) {
+                const words = cmd.split(/\s+/);
+                emailValue = words.find(w => w.includes("@")) || "";
+            } else {
+                const parts = cmd.split(/\b(is|to|be)\b/);
+                if (parts.length > 1) {
+                    emailValue = parts.pop().trim().replace(/\s/g, "");
+                }
+            }
+            
+            if (emailValue) {
+                const cleanEmail = emailValue.replace(/\s/g, "");
+                setEmail(cleanEmail);
+                speak(`Email set to ${cleanEmail}`);
+            }
+        }
+
+        // 3. Fill Password
+        if (cmd.match(/(password|pass).* (is|to|be) (.*)/)) {
+            const parts = cmd.split(/\b(is|to|be)\b/);
+            if (parts.length > 1) {
+                const passValue = parts.pop().trim().replace(/\s/g, "");
+                setPassword(passValue);
+                speak("Password set.");
+            }
+        }
+
+        // 4. Fill Name
+        if (!isLogin && cmd.match(/(name|fullname).* (is|to|be) (.*)/)) {
+            const parts = cmd.split(/\b(is|to|be)\b/);
+            if (parts.length > 1) {
+                const nameValue = parts.pop().trim();
+                setName(nameValue);
+                speak(`Name set to ${nameValue}`);
+            }
+        }
+
+        // 5. Select Role
+        if (!isLogin) {
+            if (cmd.match(/(i am|role|account).*student/)) {
+                setRole("student");
+                speak("Role set to student.");
+            } else if (cmd.match(/(i am|role|account).*teacher/)) {
+                setRole("teacher");
+                speak("Role set to teacher.");
+            }
+        }
+
+        // 6. Submit
+        if (cmd.match(/\b(submit|login|sign in|create|register|done|finish|enter|log me in)\b/)) {
+            const isTyping = cmd.match(/\b(is|to|be)\b/);
+            if (!isTyping) {
+                speak("Submitting form...");
+                handleSubmit({ preventDefault: () => {} });
+            }
+        }
+
+        // 7. Help
+        if (cmd.match(/(help|what|can i say|commands)/)) {
+            if (isLogin) {
+                speak("You can say: Email is, Password is, or Log me in.");
+            } else {
+                speak("You can say: Name is, Email is, I am a student, or Create my account.");
+            }
+        }
+
+    }, [lastCommand, isVoiceEnabled, isLogin]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

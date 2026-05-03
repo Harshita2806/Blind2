@@ -1,11 +1,14 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
+import { VoiceProvider } from "./context/VoiceContext";
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
 import Teacher from "./pages/TeacherPage";
 import Student from "./pages/StudentPage";
 import QuizPage from "./pages/QuizPage";
+import VoiceNavigator from "./components/VoiceNavigator";
+import VoiceStatusUI from "./components/VoiceStatusUI";
 
 // ─── Protected Route ──────────────────────────────────────────────────────────
 function ProtectedRoute({ children, requiredRole }) {
@@ -54,8 +57,11 @@ export default function App() {
   return (
     <AuthProvider>
       <SocketProvider>
-        <Router>
-        <Routes>
+        <VoiceProvider>
+          <Router>
+            <VoiceNavigator />
+            <VoiceStatusUI />
+            <Routes>
           {/* Public */}
           <Route path="/" element={<LandingPage />} />
 
@@ -96,8 +102,10 @@ export default function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Router>
-    </SocketProvider>
+          </Router>
+        </VoiceProvider>
+      </SocketProvider>
     </AuthProvider>
+
   );
 }

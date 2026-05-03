@@ -6,6 +6,7 @@ import {
     TrendingUp, Award, Eye, Star, Trash2
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useVoice } from "../context/VoiceContext";
 import { useNavigate } from "react-router-dom";
 import { materialsAPI, analyticsAPI, announcementsAPI } from "../services/api";
 import { quizzesAPI } from "../services/api";
@@ -15,6 +16,7 @@ const GRADES = ["Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 1
 
 export default function TeacherPage() {
     const { user, logout } = useAuth();
+    const { lastCommand, speak } = useVoice();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeSection, setActiveSection] = useState("dashboard");
@@ -30,6 +32,28 @@ export default function TeacherPage() {
     const [uploadMessage, setUploadMessage] = useState("");
 
     useEffect(() => { fetchMaterials(); fetchAnalytics(); }, []);
+
+    // --- Voice Command Listener (Local to Teacher Dashboard) ---
+    useEffect(() => {
+        if (!lastCommand) return;
+
+        const cmd = lastCommand.toLowerCase();
+        
+        // Flexible Navigation
+        if (cmd.match(/(open|go to|show).*dashboard/)) {
+            setActiveSection("dashboard");
+            speak("Opening teacher dashboard.");
+        } 
+        else if (cmd.match(/(open|go to|show).*announcements/)) {
+            setActiveSection("announcements");
+            speak("Opening announcements management.");
+        }
+        else if (cmd.match(/(open|go to|show).*analytics/)) {
+            setActiveSection("analytics");
+            speak("Opening student analytics.");
+        }
+        
+    }, [lastCommand, speak]);
 
     const fetchMaterials = async () => {
         setLoading(true);
